@@ -221,6 +221,9 @@ fun ChessClockApp() {
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
     
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showCustomDialog by remember { mutableStateOf(false) }
+    var customMinutes by remember { mutableStateOf("5") }
+    var customIncrement by remember { mutableStateOf("0") }
     
     fun vibrate() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -232,14 +235,15 @@ fun ChessClockApp() {
     
     // Ajan esiasetukset
     val timePresets = listOf(
+        TimePreset("Bullet", 1, 0),
         TimePreset("Blitz", 3, 0),
         TimePreset("Blitz +2", 3, 2),
-        TimePreset("Bullet", 1, 0),
         TimePreset("Rapid", 5, 0),
         TimePreset("Rapid +3", 5, 3),
         TimePreset("Classical", 10, 0),
         TimePreset("Classical +5", 10, 5),
-        TimePreset("Classical +10", 15, 10)
+        TimePreset("Classical +10", 15, 10),
+        TimePreset("Custom", 0, 0)
     )
     
     Box(modifier = Modifier.fillMaxSize()) {
@@ -408,8 +412,13 @@ fun ChessClockApp() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    viewModel.selectTime(preset.minutes, preset.incrementSeconds)
-                                    showSettingsDialog = false
+                                    if (preset.name == "Custom") {
+                                        showSettingsDialog = false
+                                        showCustomDialog = true
+                                    } else {
+                                        viewModel.selectTime(preset.minutes, preset.incrementSeconds)
+                                        showSettingsDialog = false
+                                    }
                                 },
                             elevation = CardDefaults.cardElevation(
                                 defaultElevation = if (isSelected) 4.dp else 2.dp
@@ -425,12 +434,16 @@ fun ChessClockApp() {
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(preset.name, fontSize = 18.sp)
-                                if (preset.incrementSeconds > 0) {
-                                    Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 16.sp)
+                                if (preset.name != "Custom") {
+                                    if (preset.incrementSeconds > 0) {
+                                        Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 16.sp)
+                                    } else {
+                                        Text("${preset.minutes} min", fontSize = 16.sp)
+                                    }
                                 } else {
-                                    Text("${preset.minutes} min", fontSize = 16.sp)
+                                    Text("Aseta oma aika", fontSize = 16.sp, color = Color(0xFF2196F3))
                                 }
-                                if (isSelected) {
+                                if (isSelected && preset.name != "Custom") {
                                     Text("✓", fontSize = 18.sp, color = Color(0xFF4CAF50))
                                 }
                             }
@@ -440,6 +453,65 @@ fun ChessClockApp() {
             },
             confirmButton = {
                 TextButton(onClick = { showSettingsDialog = false }) {
+                    Text("Peruuta")
+                }
+            }
+        )
+    }
+    
+    // Custom-aika dialogi
+    if (showCustomDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomDialog = false },
+            title = { Text("Aseta oma aika", fontSize = 20.sp) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Minuutit:", fontSize = 16.sp)
+                    OutlinedTextField(
+                        value = customMinutes,
+                        onValueChange = { customMinutes = it },
+                        label = { Text("Minuutit (1-60)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    
+                    Text("Lisäysaika (increment):", fontSize = 16.sp)
+                    OutlinedTextField(
+                        value = customIncrement,
+                        onValueChange = { customIncrement = it },
+                        label = { Text("Sekuntia per siirto (0-60)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    
+                    Text(
+                        text = "Esimerkki: 5 min + 3 sekuntia = Rapid-peli",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val minutes = customMinutes.toIntOrNull()
+                        val increment = customIncrement.toIntOrNull()
+                        if (minutes != null && minutes in 1..60 && increment != null && increment in 0..60) {
+                            viewModel.selectTime(minutes, increment)
+                            showCustomDialog = false
+                        }
+                    }
+                ) {
+                    Text("Aseta")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomDialog = false }) {
                     Text("Peruuta")
                 }
             }
