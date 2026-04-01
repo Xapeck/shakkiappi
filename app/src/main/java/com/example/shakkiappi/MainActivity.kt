@@ -422,7 +422,7 @@ fun ChessClockApp() {
         )
     }
     
-    // YKSINKERTAINEN CUSTOM-AIKA-DIALOGI - tekstikentillä
+    // Custom-aika dialogi - korjattu tekstikenttien korkeus
     if (showCustomDialog) {
         AlertDialog(
             onDismissRequest = { showCustomDialog = false },
@@ -432,29 +432,41 @@ fun ChessClockApp() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     // Minuutit
-                    OutlinedTextField(
-                        value = customMinutes,
-                        onValueChange = { customMinutes = it.filter { char -> char.isDigit() } },
-                        label = { Text("Minuutit (1-60)") },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = customMinutes.toIntOrNull() !in 1..60 && customMinutes.isNotEmpty()
-                    )
+                    Column {
+                        Text("Minuutit (1-60)", fontSize = 14.sp, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = customMinutes,
+                            onValueChange = { customMinutes = it.filter { char -> char.isDigit() } },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(70.dp),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            isError = customMinutes.toIntOrNull() !in 1..60 && customMinutes.isNotEmpty(),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp)
+                        )
+                    }
                     
                     // Lisäysaika
-                    OutlinedTextField(
-                        value = customIncrement,
-                        onValueChange = { customIncrement = it.filter { char -> char.isDigit() } },
-                        label = { Text("Lisäysaika sekuntia (0-60)") },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = customIncrement.toIntOrNull() !in 0..60 && customIncrement.isNotEmpty()
-                    )
+                    Column {
+                        Text("Lisäysaika (sekuntia 0-60)", fontSize = 14.sp, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = customIncrement,
+                            onValueChange = { customIncrement = it.filter { char -> char.isDigit() } },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(70.dp),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            isError = customIncrement.toIntOrNull() !in 0..60 && customIncrement.isNotEmpty(),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp)
+                        )
+                    }
                     
                     // Esikatselu
                     val minutesValid = customMinutes.toIntOrNull() in 1..60
@@ -477,7 +489,7 @@ fun ChessClockApp() {
                     ) {
                         Text(
                             text = previewText,
-                            fontSize = 14.sp,
+                            fontSize = 16.sp,
                             modifier = Modifier.padding(12.dp),
                             color = if (minutesValid && incrementValid) Color(0xFF2E7D32) else Color(0xFFC62828)
                         )
@@ -496,12 +508,12 @@ fun ChessClockApp() {
                     },
                     enabled = customMinutes.toIntOrNull() in 1..60 && customIncrement.toIntOrNull() in 0..60
                 ) {
-                    Text("Aseta ja aloita")
+                    Text("Aseta ja aloita", fontSize = 16.sp)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomDialog = false }) {
-                    Text("Peruuta")
+                    Text("Peruuta", fontSize = 16.sp)
                 }
             }
         )
