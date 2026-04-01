@@ -37,25 +37,3 @@ out/
 Thumbs.db
 *.swp
 *.swo
-
-# Kotlin
-*.kotlin_build
-
-# Gradle wrapper
-gradle/wrapper/gradle-wrapper.jar
-!gradle/wrapper/gradle-wrapper.properties
-
-# IntelliJ
-.idea/
-*.iws
-*.ipr
-out/
-
-# Keystore (turvallisuussyistä)
-**/*.jks
-**/*.keystore
-**/keystore.properties
-
-# Backup files
-*.bak
-*.backup
