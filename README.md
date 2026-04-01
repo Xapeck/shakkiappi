@@ -12,30 +12,30 @@ Nykyaikainen shakkikello-sovellus Androidille, jossa on intuitiivinen käyttöli
 - RESET - Pitkä painallus palauttaa ajanvalintatilaan
 - ASETUKSET - Vaihda aikakontrollia kesken pelin (pausettaa ajan)
 - Tauko-toiminto - Aika pysähtyy asetusten ajaksi
-- JATKA PELIA - Jatka tauon jälkeen
-- Visuaalinen palaute - Aktiivinen pelaaja näkyy vihrealla
+- JATKA PELIÄ - Jatka tauon jälkeen
+- Visuaalinen palaute - Aktiivinen pelaaja näkyy vihreällä
 
 ## Teknologiat
 
-- Kotlin 1.9.20 - Paaohjelmointikieli
+- Kotlin 1.9.20 - Pääohjelmointikieli
 - Jetpack Compose 1.5.4 - Deklaratiivinen UI
 - ViewModel 2.7.0 - Tilojen hallinta
-- Coroutines 1.7.3 - Ajanlasku ja taustatyot
+- Coroutines 1.7.3 - Ajanlasku ja taustatyöt
 - Material 3 - Moderni UI-komponentit
 
 ## Sovelluksen toiminnot
 
-### Paanakyma
-- Ylaosa (Musta) - Mustan pelaajan aika ja siirrot
+### Päänäkymä
+- Yläosa (Musta) - Mustan pelaajan aika ja siirrot
 - Alaosa (Valkoinen) - Valkoisen pelaajan aika ja siirrot
-- Aktiivinen pelaaja - Naykyy vihrealla taustalla
+- Aktiivinen pelaaja - Näkyy vihreällä taustalla
 - Tauko - Harmaa tausta, kun peli on keskeytetty
 
 ### Ohjausnapit
-- Vasen alakulma - RESET (pitka painallus)
+- Vasen alakulma - RESET (pitkä painallus)
 - Oikea alakulma - ASETUKSET (normaali painallus)
 - ALOITA PELI - Aloita peli valitulla aikakontrollilla
-- JATKA PELIA - Jatka tauon jalkeen
+- JATKA PELIÄ - Jatka tauon jälkeen
 
 ### Aikakontrollit
 
@@ -53,10 +53,10 @@ Nykyaikainen shakkikello-sovellus Androidille, jossa on intuitiivinen käyttöli
 ## Projektin rakenne
 
 app/src/main/java/com/example/shakkiappi/
-- MainActivity.kt          Paanakyma ja UI
+- MainActivity.kt          Päänäkymä ja UI
 - res/
   - values/                Tekstit ja teemat
-  - raw/                   Aanitiedostot
+  - raw/                   Äänitiedostot
 
 ## Asennus
 
@@ -78,15 +78,15 @@ Rakenna release APK
 Asenna
 adb install app/build/outputs/apk/release/app-release.apk
 
-## Kayttoohje
+## Käyttöohje
 
 1. Ajan valinta - Paina asetusnappia ja valitse haluamasi aikakontrolli
 2. Pelin aloitus - Paina ALOITA PELI
-3. Siirron tekeminen - Paina omaa puoliskoasi naytosta (valkoinen tai musta)
-4. Ajan seuraaminen - Naytto nayttaa kuluvan ajan ja siirrot
-5. Pelin keskeytys - Paina asetusnappia (aika pysahtyy)
-6. Jatkaminen - Paina JATKA PELIA
-7. Uusi peli - Pida reset-nappia painettuna pitkaan
+3. Siirron tekeminen - Paina omaa puoliskoasi näytöstä (valkoinen tai musta)
+4. Ajan seuraaminen - Näyttö näyttää kuluvan ajan ja siirrot
+5. Pelin keskeytys - Paina asetusnappia (aika pysähtyy)
+6. Jatkaminen - Paina JATKA PELIÄ
+7. Uusi peli - Pidä reset-nappia painettuna pitkään
 
 ## Branch-strategia
 
@@ -97,7 +97,7 @@ adb install app/build/outputs/apk/release/app-release.apk
 
 1. Forkkaa repositorio
 2. Luo uusi feature-haara (git checkout -b feature/ominaisuus)
-3. Committaa muutokset (git commit -m 'Lisaa uusi ominaisuus')
+3. Committaa muutokset (git commit -m 'Lisää uusi ominaisuus')
 4. Pushaa haara (git push origin feature/ominaisuus)
 5. Avaa Pull Request
 
@@ -105,6 +105,6 @@ adb install app/build/outputs/apk/release/app-release.apk
 
 MIT License
 
-## Tekijat
+## Tekijät
 
 Xapeck - https://github.com/Xapeck
