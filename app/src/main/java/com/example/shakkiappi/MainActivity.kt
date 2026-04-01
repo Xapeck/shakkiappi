@@ -24,6 +24,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -422,7 +423,7 @@ fun ChessClockApp() {
         )
     }
     
-    // Custom-aika dialogi - korjattu tekstikenttien korkeus
+    // Custom-aika dialogi - kentät vierekkäin
     if (showCustomDialog) {
         AlertDialog(
             onDismissRequest = { showCustomDialog = false },
@@ -432,40 +433,68 @@ fun ChessClockApp() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Minuutit
-                    Column {
-                        Text("Minuutit (1-60)", fontSize = 14.sp, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = customMinutes,
-                            onValueChange = { customMinutes = it.filter { char -> char.isDigit() } },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(70.dp),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            isError = customMinutes.toIntOrNull() !in 1..60 && customMinutes.isNotEmpty(),
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp)
-                        )
-                    }
-                    
-                    // Lisäysaika
-                    Column {
-                        Text("Lisäysaika (sekuntia 0-60)", fontSize = 14.sp, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = customIncrement,
-                            onValueChange = { customIncrement = it.filter { char -> char.isDigit() } },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(70.dp),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            isError = customIncrement.toIntOrNull() !in 0..60 && customIncrement.isNotEmpty(),
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp)
-                        )
+                    // Kentät vierekkäin
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Minuutit
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Min", fontSize = 14.sp, color = Color.Gray)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(70.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = customMinutes,
+                                    onValueChange = { customMinutes = it.filter { char -> char.isDigit() } },
+                                    modifier = Modifier.fillMaxSize(),
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    isError = customMinutes.toIntOrNull() !in 1..60 && customMinutes.isNotEmpty(),
+                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 28.sp, textAlign = TextAlign.Center),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF4CAF50),
+                                        unfocusedBorderColor = Color.Gray
+                                    )
+                                )
+                            }
+                        }
+                        
+                        // Lisäysaika
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Incr", fontSize = 14.sp, color = Color.Gray)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(70.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = customIncrement,
+                                    onValueChange = { customIncrement = it.filter { char -> char.isDigit() } },
+                                    modifier = Modifier.fillMaxSize(),
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    isError = customIncrement.toIntOrNull() !in 0..60 && customIncrement.isNotEmpty(),
+                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 28.sp, textAlign = TextAlign.Center),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF4CAF50),
+                                        unfocusedBorderColor = Color.Gray
+                                    )
+                                )
+                            }
+                        }
                     }
                     
                     // Esikatselu
@@ -474,12 +503,12 @@ fun ChessClockApp() {
                     val previewText = if (minutesValid && incrementValid) {
                         val inc = customIncrement.toIntOrNull() ?: 0
                         if (inc > 0) {
-                            "${customMinutes} min + ${inc} sekuntia"
+                            "${customMinutes} min + ${inc} s"
                         } else {
                             "${customMinutes} min"
                         }
                     } else {
-                        "Syötä minuutit 1-60 ja lisäysaika 0-60"
+                        "Syötä min 1-60, inc 0-60"
                     }
                     
                     Surface(
@@ -489,9 +518,10 @@ fun ChessClockApp() {
                     ) {
                         Text(
                             text = previewText,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(12.dp),
-                            color = if (minutesValid && incrementValid) Color(0xFF2E7D32) else Color(0xFFC62828)
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(10.dp),
+                            color = if (minutesValid && incrementValid) Color(0xFF2E7D32) else Color(0xFFC62828),
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
