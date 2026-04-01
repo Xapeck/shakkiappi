@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -218,10 +219,8 @@ fun ChessClockApp() {
     
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
-    val snackbarHostState = remember { SnackbarHostState() }
     
     var showSettingsDialog by remember { mutableStateOf(false) }
-    var showResetConfirm by remember { mutableStateOf(false) }
     
     fun vibrate() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -312,13 +311,12 @@ fun ChessClockApp() {
         }
         
         // Vasen alakulma - RESET-ikoni (long press)
-        IconButton(
-            onClick = {}, // Tyhjä, long press hoitaa
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(12.dp)
                 .size(48.dp)
-                .background(Color(0xFFF44336), shape = MaterialTheme.shapes.small)
+                .background(Color(0xFFF44336), shape = RoundedCornerShape(24.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
@@ -327,8 +325,6 @@ fun ChessClockApp() {
                             }
                             viewModel.resetToTimeSelection()
                             vibrate()
-                            // Näytä snackbar varmistuksesta
-                            // Snackbar ei ole pakollinen, mutta kiva lisä
                         }
                     )
                 },
@@ -343,19 +339,19 @@ fun ChessClockApp() {
         }
         
         // Oikea alakulma - ASETUKSET-ikoni
-        IconButton(
-            onClick = {
-                if (isRunning && !isPaused) {
-                    viewModel.pauseGame()
-                }
-                showSettingsDialog = true
-                vibrate()
-            },
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(12.dp)
                 .size(48.dp)
-                .background(Color(0xFF2196F3), shape = MaterialTheme.shapes.small),
+                .background(Color(0xFF2196F3), shape = RoundedCornerShape(24.dp))
+                .clickable {
+                    if (isRunning && !isPaused) {
+                        viewModel.pauseGame()
+                    }
+                    showSettingsDialog = true
+                    vibrate()
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
