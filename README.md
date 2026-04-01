@@ -1,96 +1,110 @@
-Shakkiappi - Moderni shakkikello Androidille
+# Shakkiappi - Moderni shakkikello Androidille
 
-Nykyaikainen shakkikello-sovellus Androidille, jossa on laajat ominaisuudet ja moderni käyttöliittymä.
+Nykyaikainen shakkikello-sovellus Androidille, jossa on intuitiivinen käyttöliittymä ja kattavat ominaisuudet.
 
-Ominaisuudet
+## Ominaisuudet
 
-- Shakkikello: Kaksi painiketta (koko näyttö jaettuna kahtia)
-- Ajanvalinta: 3 min, 5 min, 10 min + custom-aika (minuutit ja sekunnit)
-- Lisäys ja viive: Fischer vs Bronstein -aikakontrollit
-- Ääni- ja tuntopalautteet: Painalluksista saa välittömän palautteen
-- Kierroslaskuri: Montako siirtoa kummallakin pelaajalla
-- Visuaaliset teemat: Vaihdettavat väriteemat
-- Pelitilastot: Historia ja voittoprosentit
-- Monipelaaja: Bluetooth-tuki kahdelle laitteelle (tulossa)
+- Shakkikello - Koko näyttö jaettuna kahtia, paina omaa puoliskoasi siirron jälkeen
+- Ajanvalinta - Esiasetukset: 1 min (Bullet), 3 min (Blitz), 5 min (Rapid), 10 min (Classical), 15 min
+- Increment (Fischer) - Lisäysaika jokaisen siirron jälkeen: 3+2, 5+3, 10+5
+- Siirtolaskuri - Seuraa kummankin pelaajan siirtoja
+- Tuntopalaute - Värinä jokaisesta painalluksesta
+- RESET - Pitkä painallus palauttaa ajanvalintatilaan
+- ASETUKSET - Vaihda aikakontrollia kesken pelin (pausettaa ajan)
+- Tauko-toiminto - Aika pysähtyy asetusten ajaksi
+- JATKA PELIA - Jatka tauon jälkeen
+- Visuaalinen palaute - Aktiivinen pelaaja näkyy vihrealla
 
-Teknologiat
+## Teknologiat
 
-- Kotlin 1.9.20 - Pääohjelmointikieli
+- Kotlin 1.9.20 - Paaohjelmointikieli
 - Jetpack Compose 1.5.4 - Deklaratiivinen UI
-- Clean Architecture + MVVM - Skaalautuva arkkitehtuuri
-- Room 2.6.1 - Paikallinen tietokanta
-- Hilt 2.48 - Riippuvuuksien injektio
-- DataStore 1.0.0 - Asetusten tallennus
-- ExoPlayer 1.2.1 - Ääniefektit
-- Navigation Compose 2.7.6 - Navigointi
+- ViewModel 2.7.0 - Tilojen hallinta
+- Coroutines 1.7.3 - Ajanlasku ja taustatyot
+- Material 3 - Moderni UI-komponentit
 
-Projektin rakenne
+## Sovelluksen toiminnot
+
+### Paanakyma
+- Ylaosa (Musta) - Mustan pelaajan aika ja siirrot
+- Alaosa (Valkoinen) - Valkoisen pelaajan aika ja siirrot
+- Aktiivinen pelaaja - Naykyy vihrealla taustalla
+- Tauko - Harmaa tausta, kun peli on keskeytetty
+
+### Ohjausnapit
+- Vasen alakulma - RESET (pitka painallus)
+- Oikea alakulma - ASETUKSET (normaali painallus)
+- ALOITA PELI - Aloita peli valitulla aikakontrollilla
+- JATKA PELIA - Jatka tauon jalkeen
+
+### Aikakontrollit
+
+| Nimi | Aika | Increment |
+|------|------|-----------|
+| Bullet | 1 min | - |
+| Blitz | 3 min | - |
+| Blitz +2 | 3 min | +2s/siirto |
+| Rapid | 5 min | - |
+| Rapid +3 | 5 min | +3s/siirto |
+| Classical | 10 min | - |
+| Classical +5 | 10 min | +5s/siirto |
+| Classical +10 | 15 min | +10s/siirto |
+
+## Projektin rakenne
 
 app/src/main/java/com/example/shakkiappi/
-├── data/                    # Data layer
-│   ├── local/              # Paikallinen data
-│   │   ├── database/       # Room-tietokanta
-│   │   ├── datastore/      # DataStore-asetukset
-│   │   └── repository/     # Repository-toteutukset
-│   └── model/              # Data-modelit
-├── domain/                  # Domain layer
-│   ├── repository/         # Repository-rajapinnat
-│   └── usecase/            # Use case -luokat
-├── presentation/            # Presentation layer
-│   ├── ui/                 # UI-komponentit
-│   │   ├── components/     # Uudelleenkäytettävät komponentit
-│   │   ├── screens/        # Näkymät
-│   │   └── theme/          # Teemat
-│   └── viewmodel/          # ViewModel-luokat
-├── service/                 # Palvelut (äänet, haptiikka)
-└── utils/                   # Apufunktiot
+- MainActivity.kt          Paanakyma ja UI
+- res/
+  - values/                Tekstit ja teemat
+  - raw/                   Aanitiedostot
 
-Asennus
+## Asennus
 
-1. Kloonaa repositorio:
-   git clone https://github.com/Xapeck/shakkiappi.git
-   cd shakkiappi
+### Debug-versio (kehitys)
 
-2. Avaa projekti Android Studiossa:
-   File -> Open -> Valitse projekti
+git clone https://github.com/Xapeck/shakkiappi.git
+cd shakkiappi
+./gradlew assembleDebug
+adb install app/build/outputs/apk/debug/app-debug.apk
 
-3. Synkronoi Gradle:
-   File -> Sync Project with Gradle Files
+### Release-versio (tuotanto)
 
-4. Lisää äänitiedostot:
-   app/src/main/res/raw/click_sound.mp3 (lyhyt napsahdus)
-   app/src/main/res/raw/game_end.mp3 (pelin päättymisääni)
+Luo keystore (vain kerran)
+keytool -genkey -v -keystore ~/shakkiappi-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias shakkiappi
 
-5. Buildaa ja aja:
-   Valitse emulaattori tai fyysinen laite
-   Paina Run (Shift + F10)
+Rakenna release APK
+./gradlew assembleRelease
 
-Käyttöohje
+Asenna
+adb install app/build/outputs/apk/release/app-release.apk
 
-1. Pelin aloitus: Paina oikean alareunan asetusnappia
-2. Ajan valinta: Valitse esiasetettu aika tai custom-aika
-3. Pelaaminen: Paina omaa puoliskoa näytöstä siirron jälkeen
-4. Tilastot: Vasemman alareunan tähtinappi näyttää pelihistorian
+## Kayttoohje
 
-Branch-strategia
+1. Ajan valinta - Paina asetusnappia ja valitse haluamasi aikakontrolli
+2. Pelin aloitus - Paina ALOITA PELI
+3. Siirron tekeminen - Paina omaa puoliskoasi naytosta (valkoinen tai musta)
+4. Ajan seuraaminen - Naytto nayttaa kuluvan ajan ja siirrot
+5. Pelin keskeytys - Paina asetusnappia (aika pysahtyy)
+6. Jatkaminen - Paina JATKA PELIA
+7. Uusi peli - Pida reset-nappia painettuna pitkaan
 
-- main - Tuotantoversio, vain stabiilit julkaisut
+## Branch-strategia
+
+- main - Tuotantoversio, stabiilit julkaisut
 - dev - Kehityshaara, uudet ominaisuudet
 
-Osallistuminen
+## Osallistuminen
 
 1. Forkkaa repositorio
 2. Luo uusi feature-haara (git checkout -b feature/ominaisuus)
-3. Committaa muutokset (git commit -m 'Lisää uusi ominaisuus')
+3. Committaa muutokset (git commit -m 'Lisaa uusi ominaisuus')
 4. Pushaa haara (git push origin feature/ominaisuus)
 5. Avaa Pull Request
 
-Lisenssi
+## Lisenssi
 
 MIT License
 
-Tekijät
+## Tekijat
 
 Xapeck - https://github.com/Xapeck
-
-Starraa repositorio, jos pidit projektista!
