@@ -1,19 +1,26 @@
-# Gradle
+# Gradle files
 .gradle/
 build/
-app/build/
-captures/
-*.iml
-.gradle/
-local.properties
-/.idea/
-.DS_Store
-/build
-/captures
-/.cxx
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
 
-# Android
+# Android Studio
+*.iml
+.idea/
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Keystore files (tärkeä!)
+*.jks
+*.keystore
+keystore.properties
+
+# Build outputs
 *.apk
+*.aab
 *.ap_
 *.dex
 *.class
@@ -22,14 +29,33 @@ gen/
 out/
 .releaselock
 
-# Kotlin
+# Log files
 *.log
-*.lock
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
 
-# Keystore
-*.jks
-*.keystore
+# Kotlin
+*.kotlin_build
+
+# Gradle wrapper
+gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IntelliJ
+.idea/
+*.iws
+*.ipr
+out/
+
+# Keystore (turvallisuussyistä)
+**/*.jks
+**/*.keystore
+**/keystore.properties
+
+# Backup files
+*.bak
+*.backup
