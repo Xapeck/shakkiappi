@@ -3,7 +3,6 @@ package com.example.REMOVED
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibrationEffect
-import android.widget.NumberPicker
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -24,7 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -227,6 +226,8 @@ fun ChessClockApp() {
     
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showCustomDialog by remember { mutableStateOf(false) }
+    var customMinutes by remember { mutableStateOf("5") }
+    var customIncrement by remember { mutableStateOf("0") }
     
     fun vibrate() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -421,11 +422,8 @@ fun ChessClockApp() {
         )
     }
     
-    // Custom-aika dialogi NumberPickerillä - toimii varmasti!
+    // YKSINKERTAINEN CUSTOM-AIKA-DIALOGI - tekstikentillä
     if (showCustomDialog) {
-        var minutes by remember { mutableIntStateOf(5) }
-        var increment by remember { mutableIntStateOf(0) }
-        
         AlertDialog(
             onDismissRequest = { showCustomDialog = false },
             title = { Text("Aseta oma aika", fontSize = 20.sp) },
@@ -434,58 +432,54 @@ fun ChessClockApp() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Minuutit
-                    Text("Minuutit:", fontSize = 16.sp)
-                    AndroidView(
-                        factory = { ctx ->
-                            NumberPicker(ctx).apply {
-                                minValue = 1
-                                maxValue = 60
-                                value = 5
-                                wrapSelectorWheel = true
-                                setOnValueChangedListener { _, _, newVal ->
-                                    minutes = newVal
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
+                    OutlinedTextField(
+                        value = customMinutes,
+                        onValueChange = { customMinutes = it.filter { char -> char.isDigit() } },
+                        label = { Text("Minuutit (1-60)") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = customMinutes.toIntOrNull() !in 1..60 && customMinutes.isNotEmpty()
                     )
                     
                     // Lisäysaika
-                    Text("Lisäysaika (sekuntia):", fontSize = 16.sp)
-                    AndroidView(
-                        factory = { ctx ->
-                            NumberPicker(ctx).apply {
-                                minValue = 0
-                                maxValue = 60
-                                value = 0
-                                wrapSelectorWheel = true
-                                setOnValueChangedListener { _, _, newVal ->
-                                    increment = newVal
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
+                    OutlinedTextField(
+                        value = customIncrement,
+                        onValueChange = { customIncrement = it.filter { char -> char.isDigit() } },
+                        label = { Text("Lisäysaika sekuntia (0-60)") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = customIncrement.toIntOrNull() !in 0..60 && customIncrement.isNotEmpty()
                     )
                     
                     // Esikatselu
+                    val minutesValid = customMinutes.toIntOrNull() in 1..60
+                    val incrementValid = customIncrement.toIntOrNull() in 0..60
+                    val previewText = if (minutesValid && incrementValid) {
+                        val inc = customIncrement.toIntOrNull() ?: 0
+                        if (inc > 0) {
+                            "${customMinutes} min + ${inc} sekuntia"
+                        } else {
+                            "${customMinutes} min"
+                        }
+                    } else {
+                        "Syötä minuutit 1-60 ja lisäysaika 0-60"
+                    }
+                    
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFE3F2FD),
+                        color = if (minutesValid && incrementValid) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "📊 $minutes min + ${increment}s",
+                            text = previewText,
                             fontSize = 14.sp,
-                            modifier = Modifier.padding(10.dp),
-                            color = Color(0xFF1976D2)
+                            modifier = Modifier.padding(12.dp),
+                            color = if (minutesValid && incrementValid) Color(0xFF2E7D32) else Color(0xFFC62828)
                         )
                     }
                 }
@@ -493,9 +487,14 @@ fun ChessClockApp() {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.selectTime(minutes, increment)
-                        showCustomDialog = false
-                    }
+                        val minutes = customMinutes.toIntOrNull()
+                        val increment = customIncrement.toIntOrNull()
+                        if (minutes != null && minutes in 1..60 && increment != null && increment in 0..60) {
+                            viewModel.selectTime(minutes, increment)
+                            showCustomDialog = false
+                        }
+                    },
+                    enabled = customMinutes.toIntOrNull() in 1..60 && customIncrement.toIntOrNull() in 0..60
                 ) {
                     Text("Aseta ja aloita")
                 }
