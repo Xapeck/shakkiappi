@@ -7,14 +7,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,10 +36,10 @@ import kotlinx.coroutines.launch
 data class TimePreset(val name: String, val minutes: Int, val incrementSeconds: Int)
 
 class ClockViewModel : ViewModel() {
-    private val _whiteTime = MutableStateFlow(180000L)  // 3 min oletus
+    private val _whiteTime = MutableStateFlow(180000L)
     val whiteTime: StateFlow<Long> = _whiteTime.asStateFlow()
     
-    private val _blackTime = MutableStateFlow(180000L)  // 3 min oletus
+    private val _blackTime = MutableStateFlow(180000L)
     val blackTime: StateFlow<Long> = _blackTime.asStateFlow()
     
     private val _activePlayer = MutableStateFlow("white")
@@ -55,17 +60,16 @@ class ClockViewModel : ViewModel() {
     private val _incrementSeconds = MutableStateFlow(0)
     val incrementSeconds: StateFlow<Int> = _incrementSeconds.asStateFlow()
     
-    private val _selectedMinutes = MutableStateFlow(3)  // Oletus 3 min
+    private val _selectedMinutes = MutableStateFlow(3)
     val selectedMinutes: StateFlow<Int> = _selectedMinutes.asStateFlow()
     
-    private val _selectedIncrement = MutableStateFlow(0)  // Oletus 0 increment
+    private val _selectedIncrement = MutableStateFlow(0)
     val selectedIncrement: StateFlow<Int> = _selectedIncrement.asStateFlow()
     
     private var timerJob: Job? = null
     
     init {
-        // Alusta oletusarvot
-        _whiteTime.value = 180000L  // 3 min
+        _whiteTime.value = 180000L
         _blackTime.value = 180000L
         _selectedMinutes.value = 3
         _selectedIncrement.value = 0
@@ -111,7 +115,6 @@ class ClockViewModel : ViewModel() {
         stopTimer()
         _isRunning.value = false
         _isPaused.value = false
-        // Palauta viimeksi valitut ajat (oletus 3 min jos ei ole valittu)
         val minutes = if (_selectedMinutes.value > 0) _selectedMinutes.value else 3
         val timeMs = minutes * 60 * 1000L
         _whiteTime.value = timeMs
@@ -215,8 +218,10 @@ fun ChessClockApp() {
     
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
+    val snackbarHostState = remember { SnackbarHostState() }
     
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showResetConfirm by remember { mutableStateOf(false) }
     
     fun vibrate() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -226,7 +231,7 @@ fun ChessClockApp() {
         }
     }
     
-    // Ajan esiasetukset (3 min ensimmäisenä)
+    // Ajan esiasetukset
     val timePresets = listOf(
         TimePreset("Blitz", 3, 0),
         TimePreset("Blitz +2", 3, 2),
@@ -306,39 +311,62 @@ fun ChessClockApp() {
             }
         }
         
-        // Vasen alakulma - RESET-nappi
-        Button(
-            onClick = {
-                if (isRunning && !isPaused) {
-                    viewModel.pauseGame()
-                }
-                viewModel.resetToTimeSelection()
-            },
+        // Vasen alakulma - RESET-ikoni (long press)
+        IconButton(
+            onClick = {}, // Tyhjä, long press hoitaa
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                .padding(12.dp)
+                .size(48.dp)
+                .background(Color(0xFFF44336), shape = MaterialTheme.shapes.small)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            if (isRunning && !isPaused) {
+                                viewModel.pauseGame()
+                            }
+                            viewModel.resetToTimeSelection()
+                            vibrate()
+                            // Näytä snackbar varmistuksesta
+                            // Snackbar ei ole pakollinen, mutta kiva lisä
+                        }
+                    )
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Text("🔄 RESET", fontSize = 16.sp, color = Color.White)
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Reset (pitkä painallus)",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
         }
         
-        // Oikea alakulma - ASETUKSET-nappi
-        Button(
+        // Oikea alakulma - ASETUKSET-ikoni
+        IconButton(
             onClick = {
                 if (isRunning && !isPaused) {
                     viewModel.pauseGame()
                 }
                 showSettingsDialog = true
+                vibrate()
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                .padding(12.dp)
+                .size(48.dp)
+                .background(Color(0xFF2196F3), shape = MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center
         ) {
-            Text("⚙️ ASETUKSET", fontSize = 16.sp, color = Color.White)
+            Icon(
+                Icons.Default.Settings,
+                contentDescription = "Asetukset",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
         }
         
-        // ALOITA-painike (keskellä alhaalla, näkyy kun peli ei ole käynnissä)
+        // ALOITA-painike (keskellä alhaalla)
         if (!isRunning && whiteTime > 0 && whiteTime < Long.MAX_VALUE) {
             Button(
                 onClick = { viewModel.startGame() },
