@@ -3,6 +3,7 @@ package com.example.shakkiappi
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibrationEffect
+import android.widget.NumberPicker
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -12,8 +13,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -25,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -227,8 +227,6 @@ fun ChessClockApp() {
     
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showCustomDialog by remember { mutableStateOf(false) }
-    var customMinutes by remember { mutableStateOf("5") }
-    var customIncrement by remember { mutableStateOf("0") }
     
     fun vibrate() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -382,7 +380,7 @@ fun ChessClockApp() {
             title = { Text("Aikakontrollin valinta", fontSize = 20.sp) },
             text = {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = if (isLandscape) 300.dp else 400.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = if (isLandscape) 280.dp else 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(timePresets) { preset ->
@@ -400,19 +398,19 @@ fun ChessClockApp() {
                             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp),
                             colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFFE8F5E9) else Color.White)
                         ) {
-                            Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(preset.name, fontSize = 18.sp)
+                            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(preset.name, fontSize = 16.sp)
                                 if (preset.name != "Custom") {
                                     if (preset.incrementSeconds > 0) {
-                                        Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 14.sp)
+                                        Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 13.sp)
                                     } else {
-                                        Text("${preset.minutes} min", fontSize = 14.sp)
+                                        Text("${preset.minutes} min", fontSize = 13.sp)
                                     }
                                 } else {
-                                    Text("Aseta oma aika", fontSize = 14.sp, color = Color(0xFF2196F3))
+                                    Text("⚙️ Aseta oma aika", fontSize = 13.sp, color = Color(0xFF2196F3))
                                 }
                                 if (isSelected && preset.name != "Custom") {
-                                    Text("✓", fontSize = 18.sp, color = Color(0xFF4CAF50))
+                                    Text("✓", fontSize = 16.sp, color = Color(0xFF4CAF50))
                                 }
                             }
                         }
@@ -423,9 +421,10 @@ fun ChessClockApp() {
         )
     }
     
-    // Custom-aika dialogi - toimii vaaka- ja pystymoodissa
+    // Custom-aika dialogi NumberPickerillä - toimii varmasti!
     if (showCustomDialog) {
-        val scrollState = rememberScrollState()
+        var minutes by remember { mutableIntStateOf(5) }
+        var increment by remember { mutableIntStateOf(0) }
         
         AlertDialog(
             onDismissRequest = { showCustomDialog = false },
@@ -434,80 +433,58 @@ fun ChessClockApp() {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = if (isLandscape) 320.dp else 400.dp)
-                        .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Minuutit
-                    Text("Minuutit (1-60):", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
-                    
-                    // Minuuttien valinta - skrollattava lista
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier.height(140.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            items((1..60).toList()) { minute ->
-                                val isSelected = customMinutes.toIntOrNull() == minute
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { customMinutes = minute.toString() },
-                                    color = if (isSelected) Color(0xFFE8F5E9) else Color.White
-                                ) {
-                                    Text(
-                                        text = "$minute minuuttia",
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(12.dp),
-                                        color = if (isSelected) Color(0xFF4CAF50) else Color.Black
-                                    )
+                    Text("Minuutit:", fontSize = 16.sp)
+                    AndroidView(
+                        factory = { ctx ->
+                            NumberPicker(ctx).apply {
+                                minValue = 1
+                                maxValue = 60
+                                value = 5
+                                wrapSelectorWheel = true
+                                setOnValueChangedListener { _, _, newVal ->
+                                    minutes = newVal
                                 }
                             }
-                        }
-                    }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                    )
                     
                     // Lisäysaika
-                    Text("Lisäysaika (increment):", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
-                    
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier.height(140.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            items((0..60).toList()) { inc ->
-                                val isSelected = customIncrement.toIntOrNull() == inc
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { customIncrement = inc.toString() },
-                                    color = if (isSelected) Color(0xFFE8F5E9) else Color.White
-                                ) {
-                                    Text(
-                                        text = if (inc == 0) "Ei lisäysaikaa" else "+$inc sekuntia per siirto",
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(12.dp),
-                                        color = if (isSelected) Color(0xFF4CAF50) else Color.Black
-                                    )
+                    Text("Lisäysaika (sekuntia):", fontSize = 16.sp)
+                    AndroidView(
+                        factory = { ctx ->
+                            NumberPicker(ctx).apply {
+                                minValue = 0
+                                maxValue = 60
+                                value = 0
+                                wrapSelectorWheel = true
+                                setOnValueChangedListener { _, _, newVal ->
+                                    increment = newVal
                                 }
                             }
-                        }
-                    }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                    )
                     
                     // Esikatselu
-                    Card(
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                        color = Color(0xFFE3F2FD),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "Valittu: ${customMinutes.toIntOrNull() ?: 5} min + ${customIncrement.toIntOrNull() ?: 0}s",
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(12.dp),
+                            text = "📊 $minutes min + ${increment}s",
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(10.dp),
                             color = Color(0xFF1976D2)
                         )
                     }
@@ -516,12 +493,8 @@ fun ChessClockApp() {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val minutes = customMinutes.toIntOrNull()
-                        val increment = customIncrement.toIntOrNull()
-                        if (minutes != null && minutes in 1..60 && increment != null && increment in 0..60) {
-                            viewModel.selectTime(minutes, increment)
-                            showCustomDialog = false
-                        }
+                        viewModel.selectTime(minutes, increment)
+                        showCustomDialog = false
                     }
                 ) {
                     Text("Aseta ja aloita")
