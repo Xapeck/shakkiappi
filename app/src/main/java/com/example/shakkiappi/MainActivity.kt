@@ -49,16 +49,23 @@ class ClockViewModel : ViewModel() {
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
     
+    private val _isPaused = MutableStateFlow(false)
+    val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
+    
     private val _incrementSeconds = MutableStateFlow(0)
     val incrementSeconds: StateFlow<Int> = _incrementSeconds.asStateFlow()
     
+    private val _selectedMinutes = MutableStateFlow(3)
+    val selectedMinutes: StateFlow<Int> = _selectedMinutes.asStateFlow()
+    
+    private val _selectedIncrement = MutableStateFlow(0)
+    val selectedIncrement: StateFlow<Int> = _selectedIncrement.asStateFlow()
+    
     private var timerJob: Job? = null
-    private var selectedMinutes = 3
-    private var selectedIncrement = 0
     
     fun selectTime(minutes: Int, incrementSeconds: Int) {
-        selectedMinutes = minutes
-        selectedIncrement = incrementSeconds
+        _selectedMinutes.value = minutes
+        _selectedIncrement.value = incrementSeconds
         val timeMs = minutes * 60 * 1000L
         _whiteTime.value = timeMs
         _blackTime.value = timeMs
@@ -66,29 +73,56 @@ class ClockViewModel : ViewModel() {
         _blackMoves.value = 0
         _activePlayer.value = "white"
         _isRunning.value = false
+        _isPaused.value = false
         _incrementSeconds.value = incrementSeconds
         stopTimer()
     }
     
     fun startGame() {
         _isRunning.value = true
+        _isPaused.value = false
         startTimer()
     }
     
+    fun pauseGame() {
+        if (_isRunning.value && !_isPaused.value) {
+            _isPaused.value = true
+            stopTimer()
+        }
+    }
+    
+    fun resumeGame() {
+        if (_isRunning.value && _isPaused.value) {
+            _isPaused.value = false
+            startTimer()
+        }
+    }
+    
+    fun resetToTimeSelection() {
+        stopTimer()
+        _isRunning.value = false
+        _isPaused.value = false
+        // Palauta viimeksi valitut ajat
+        val timeMs = _selectedMinutes.value * 60 * 1000L
+        _whiteTime.value = timeMs
+        _blackTime.value = timeMs
+        _whiteMoves.value = 0
+        _blackMoves.value = 0
+        _activePlayer.value = "white"
+    }
+    
     fun pressPlayer(player: String) {
-        if (!_isRunning.value) return
+        if (!_isRunning.value || _isPaused.value) return
         if (_activePlayer.value != player) return
         
         if (player == "white") {
             _whiteMoves.value = _whiteMoves.value + 1
-            // Lisää aikaa (increment)
             if (_incrementSeconds.value > 0) {
                 _whiteTime.value = _whiteTime.value + (_incrementSeconds.value * 1000L)
             }
             _activePlayer.value = "black"
         } else {
             _blackMoves.value = _blackMoves.value + 1
-            // Lisää aikaa (increment)
             if (_incrementSeconds.value > 0) {
                 _blackTime.value = _blackTime.value + (_incrementSeconds.value * 1000L)
             }
@@ -98,13 +132,14 @@ class ClockViewModel : ViewModel() {
     
     private fun startTimer() {
         timerJob = viewModelScope.launch {
-            while (_isRunning.value) {
+            while (_isRunning.value && !_isPaused.value) {
                 delay(10)
                 if (_activePlayer.value == "white") {
                     val newTime = _whiteTime.value - 10
                     if (newTime <= 0) {
                         _whiteTime.value = 0
                         _isRunning.value = false
+                        _isPaused.value = false
                         break
                     }
                     _whiteTime.value = newTime
@@ -113,6 +148,7 @@ class ClockViewModel : ViewModel() {
                     if (newTime <= 0) {
                         _blackTime.value = 0
                         _isRunning.value = false
+                        _isPaused.value = false
                         break
                     }
                     _blackTime.value = newTime
@@ -124,11 +160,6 @@ class ClockViewModel : ViewModel() {
     private fun stopTimer() {
         timerJob?.cancel()
         timerJob = null
-    }
-    
-    fun reset() {
-        stopTimer()
-        _isRunning.value = false
     }
     
     override fun onCleared() {
@@ -167,12 +198,15 @@ fun ChessClockApp() {
     val whiteMoves by viewModel.whiteMoves.collectAsState()
     val blackMoves by viewModel.blackMoves.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
+    val isPaused by viewModel.isPaused.collectAsState()
     val incrementSeconds by viewModel.incrementSeconds.collectAsState()
+    val selectedMinutes by viewModel.selectedMinutes.collectAsState()
+    val selectedIncrement by viewModel.selectedIncrement.collectAsState()
     
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
     
-    var showTimeDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
     
     fun vibrate() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -191,18 +225,25 @@ fun ChessClockApp() {
         TimePreset("Rapid +3", 5, 3),
         TimePreset("Classical", 10, 0),
         TimePreset("Classical +5", 10, 5),
-        TimePreset("Custom", 0, 0)
+        TimePreset("Classical +10", 15, 10)
     )
     
     Box(modifier = Modifier.fillMaxSize()) {
+        // Pelaajat
         Column(modifier = Modifier.fillMaxSize()) {
             // Black player (top)
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(if (activePlayer == "black" && isRunning) Color(0xFF4CAF50) else Color(0xFF2C2C2C))
-                    .clickable(enabled = isRunning && activePlayer == "black") {
+                    .background(
+                        when {
+                            isPaused -> Color(0xFF666666)
+                            activePlayer == "black" && isRunning -> Color(0xFF4CAF50)
+                            else -> Color(0xFF2C2C2C)
+                        }
+                    )
+                    .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
                         vibrate()
                         viewModel.pressPlayer("black")
                     },
@@ -215,6 +256,9 @@ fun ChessClockApp() {
                     if (incrementSeconds > 0 && !isRunning) {
                         Text("+${incrementSeconds}s/siirto", color = Color.White, fontSize = 14.sp)
                     }
+                    if (isPaused) {
+                        Text("⏸ TAUKO", color = Color.Yellow, fontSize = 20.sp)
+                    }
                 }
             }
             
@@ -225,8 +269,14 @@ fun ChessClockApp() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(if (activePlayer == "white" && isRunning) Color(0xFF4CAF50) else Color(0xFFF0F0F0))
-                    .clickable(enabled = isRunning && activePlayer == "white") {
+                    .background(
+                        when {
+                            isPaused -> Color(0xFFCCCCCC)
+                            activePlayer == "white" && isRunning -> Color(0xFF4CAF50)
+                            else -> Color(0xFFF0F0F0)
+                        }
+                    )
+                    .clickable(enabled = isRunning && !isPaused && activePlayer == "white") {
                         vibrate()
                         viewModel.pressPlayer("white")
                     },
@@ -239,59 +289,103 @@ fun ChessClockApp() {
                     if (incrementSeconds > 0 && !isRunning) {
                         Text("+${incrementSeconds}s/siirto", fontSize = 14.sp)
                     }
+                    if (isPaused) {
+                        Text("⏸ TAUKO", fontSize = 20.sp)
+                    }
                 }
             }
         }
         
-        // Settings button (only when game not running)
-        if (!isRunning) {
-            FloatingActionButton(
-                onClick = { showTimeDialog = true },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            ) {
-                Text("⚙️", fontSize = 24.sp)
-            }
+        // Vasen alakulma - RESET-nappi
+        Button(
+            onClick = {
+                if (isRunning && !isPaused) {
+                    viewModel.pauseGame()
+                }
+                viewModel.resetToTimeSelection()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+        ) {
+            Text("🔄 RESET", fontSize = 16.sp, color = Color.White)
         }
         
-        // Start button (when time selected but game not running)
+        // Oikea alakulma - ASETUKSET-nappi
+        Button(
+            onClick = {
+                if (isRunning && !isPaused) {
+                    viewModel.pauseGame()
+                }
+                showSettingsDialog = true
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+        ) {
+            Text("⚙️ ASETUKSET", fontSize = 16.sp, color = Color.White)
+        }
+        
+        // ALOITA-painike (keskellä alhaalla, näkyy kun peli ei ole käynnissä)
         if (!isRunning && whiteTime > 0 && whiteTime < Long.MAX_VALUE) {
             Button(
                 onClick = { viewModel.startGame() },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp),
+                    .padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) {
-                Text("ALOITA PELI", fontSize = 20.sp, color = Color.White)
+                Text("▶ ALOITA PELI", fontSize = 20.sp, color = Color.White)
+            }
+        }
+        
+        // JATKA-painike (kun peli on tauolla)
+        if (isPaused && isRunning) {
+            Button(
+                onClick = { viewModel.resumeGame() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+            ) {
+                Text("▶ JATKA PELIÄ", fontSize = 20.sp, color = Color.White)
             }
         }
     }
     
-    if (showTimeDialog) {
+    // Asetusdialogi
+    if (showSettingsDialog) {
         AlertDialog(
-            onDismissRequest = { showTimeDialog = false },
-            title = { Text("Valitse aikakontrolli", fontSize = 20.sp) },
+            onDismissRequest = { 
+                showSettingsDialog = false
+                if (isRunning && isPaused) {
+                    // Jos peli oli tauolla, palautetaan tauko-tila
+                }
+            },
+            title = { Text("Aikakontrollin valinta", fontSize = 20.sp) },
             text = {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(timePresets) { preset ->
+                        val isSelected = selectedMinutes == preset.minutes && 
+                                        selectedIncrement == preset.incrementSeconds
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    if (preset.name == "Custom") {
-                                        // Custom dialog would go here
-                                        viewModel.selectTime(5, 0)
-                                    } else {
-                                        viewModel.selectTime(preset.minutes, preset.incrementSeconds)
-                                    }
-                                    showTimeDialog = false
+                                    viewModel.selectTime(preset.minutes, preset.incrementSeconds)
+                                    showSettingsDialog = false
                                 },
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = if (isSelected) 4.dp else 2.dp
+                            ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) Color(0xFFE8F5E9) else Color.White
+                            )
                         ) {
                             Row(
                                 modifier = Modifier
@@ -305,13 +399,16 @@ fun ChessClockApp() {
                                 } else {
                                     Text("${preset.minutes} min", fontSize = 16.sp)
                                 }
+                                if (isSelected) {
+                                    Text("✓", fontSize = 18.sp, color = Color(0xFF4CAF50))
+                                }
                             }
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showTimeDialog = false }) {
+                TextButton(onClick = { showSettingsDialog = false }) {
                     Text("Peruuta")
                 }
             }
