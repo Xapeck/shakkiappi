@@ -31,10 +31,10 @@ import kotlinx.coroutines.launch
 data class TimePreset(val name: String, val minutes: Int, val incrementSeconds: Int)
 
 class ClockViewModel : ViewModel() {
-    private val _whiteTime = MutableStateFlow(300000L)
+    private val _whiteTime = MutableStateFlow(180000L)  // 3 min oletus
     val whiteTime: StateFlow<Long> = _whiteTime.asStateFlow()
     
-    private val _blackTime = MutableStateFlow(300000L)
+    private val _blackTime = MutableStateFlow(180000L)  // 3 min oletus
     val blackTime: StateFlow<Long> = _blackTime.asStateFlow()
     
     private val _activePlayer = MutableStateFlow("white")
@@ -55,13 +55,22 @@ class ClockViewModel : ViewModel() {
     private val _incrementSeconds = MutableStateFlow(0)
     val incrementSeconds: StateFlow<Int> = _incrementSeconds.asStateFlow()
     
-    private val _selectedMinutes = MutableStateFlow(3)
+    private val _selectedMinutes = MutableStateFlow(3)  // Oletus 3 min
     val selectedMinutes: StateFlow<Int> = _selectedMinutes.asStateFlow()
     
-    private val _selectedIncrement = MutableStateFlow(0)
+    private val _selectedIncrement = MutableStateFlow(0)  // Oletus 0 increment
     val selectedIncrement: StateFlow<Int> = _selectedIncrement.asStateFlow()
     
     private var timerJob: Job? = null
+    
+    init {
+        // Alusta oletusarvot
+        _whiteTime.value = 180000L  // 3 min
+        _blackTime.value = 180000L
+        _selectedMinutes.value = 3
+        _selectedIncrement.value = 0
+        _incrementSeconds.value = 0
+    }
     
     fun selectTime(minutes: Int, incrementSeconds: Int) {
         _selectedMinutes.value = minutes
@@ -102,8 +111,9 @@ class ClockViewModel : ViewModel() {
         stopTimer()
         _isRunning.value = false
         _isPaused.value = false
-        // Palauta viimeksi valitut ajat
-        val timeMs = _selectedMinutes.value * 60 * 1000L
+        // Palauta viimeksi valitut ajat (oletus 3 min jos ei ole valittu)
+        val minutes = if (_selectedMinutes.value > 0) _selectedMinutes.value else 3
+        val timeMs = minutes * 60 * 1000L
         _whiteTime.value = timeMs
         _blackTime.value = timeMs
         _whiteMoves.value = 0
@@ -216,11 +226,11 @@ fun ChessClockApp() {
         }
     }
     
-    // Ajan esiasetukset
+    // Ajan esiasetukset (3 min ensimmäisenä)
     val timePresets = listOf(
-        TimePreset("Bullet", 1, 0),
         TimePreset("Blitz", 3, 0),
         TimePreset("Blitz +2", 3, 2),
+        TimePreset("Bullet", 1, 0),
         TimePreset("Rapid", 5, 0),
         TimePreset("Rapid +3", 5, 3),
         TimePreset("Classical", 10, 0),
@@ -360,9 +370,6 @@ fun ChessClockApp() {
         AlertDialog(
             onDismissRequest = { 
                 showSettingsDialog = false
-                if (isRunning && isPaused) {
-                    // Jos peli oli tauolla, palautetaan tauko-tila
-                }
             },
             title = { Text("Aikakontrollin valinta", fontSize = 20.sp) },
             text = {
