@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +34,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
 
 data class TimePreset(val name: String, val minutes: Int, val incrementSeconds: Int)
 
@@ -219,6 +222,8 @@ fun ChessClockApp() {
     
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showCustomDialog by remember { mutableStateOf(false) }
@@ -268,14 +273,14 @@ fun ChessClockApp() {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("MUSTA", color = Color.White, fontSize = 24.sp)
-                    Text(formatTime(blackTime), color = Color.White, fontSize = 48.sp)
-                    Text("Siirrot: $blackMoves", color = Color.White, fontSize = 18.sp)
+                    Text("MUSTA", color = Color.White, fontSize = if (isLandscape) 20.sp else 24.sp)
+                    Text(formatTime(blackTime), color = Color.White, fontSize = if (isLandscape) 36.sp else 48.sp)
+                    Text("Siirrot: $blackMoves", color = Color.White, fontSize = if (isLandscape) 14.sp else 18.sp)
                     if (incrementSeconds > 0 && !isRunning) {
-                        Text("+${incrementSeconds}s/siirto", color = Color.White, fontSize = 14.sp)
+                        Text("+${incrementSeconds}s/siirto", color = Color.White, fontSize = 12.sp)
                     }
                     if (isPaused) {
-                        Text("⏸ TAUKO", color = Color.Yellow, fontSize = 20.sp)
+                        Text("⏸ TAUKO", color = Color.Yellow, fontSize = if (isLandscape) 16.sp else 20.sp)
                     }
                 }
             }
@@ -301,14 +306,14 @@ fun ChessClockApp() {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("VALKOINEN", fontSize = 24.sp)
-                    Text(formatTime(whiteTime), fontSize = 48.sp)
-                    Text("Siirrot: $whiteMoves", fontSize = 18.sp)
+                    Text("VALKOINEN", fontSize = if (isLandscape) 20.sp else 24.sp)
+                    Text(formatTime(whiteTime), fontSize = if (isLandscape) 36.sp else 48.sp)
+                    Text("Siirrot: $whiteMoves", fontSize = if (isLandscape) 14.sp else 18.sp)
                     if (incrementSeconds > 0 && !isRunning) {
-                        Text("+${incrementSeconds}s/siirto", fontSize = 14.sp)
+                        Text("+${incrementSeconds}s/siirto", fontSize = 12.sp)
                     }
                     if (isPaused) {
-                        Text("⏸ TAUKO", fontSize = 20.sp)
+                        Text("⏸ TAUKO", fontSize = if (isLandscape) 16.sp else 20.sp)
                     }
                 }
             }
@@ -319,8 +324,8 @@ fun ChessClockApp() {
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(12.dp)
-                .size(48.dp)
-                .background(Color(0xFFF44336), shape = RoundedCornerShape(24.dp))
+                .size(if (isLandscape) 40.dp else 48.dp)
+                .background(Color(0xFFF44336), shape = RoundedCornerShape(if (isLandscape) 20.dp else 24.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
@@ -338,7 +343,7 @@ fun ChessClockApp() {
                 Icons.Default.Refresh,
                 contentDescription = "Reset (pitkä painallus)",
                 tint = Color.White,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp)
             )
         }
         
@@ -347,8 +352,8 @@ fun ChessClockApp() {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(12.dp)
-                .size(48.dp)
-                .background(Color(0xFF2196F3), shape = RoundedCornerShape(24.dp))
+                .size(if (isLandscape) 40.dp else 48.dp)
+                .background(Color(0xFF2196F3), shape = RoundedCornerShape(if (isLandscape) 20.dp else 24.dp))
                 .clickable {
                     if (isRunning && !isPaused) {
                         viewModel.pauseGame()
@@ -362,7 +367,7 @@ fun ChessClockApp() {
                 Icons.Default.Settings,
                 contentDescription = "Asetukset",
                 tint = Color.White,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp)
             )
         }
         
@@ -375,7 +380,7 @@ fun ChessClockApp() {
                     .padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) {
-                Text("▶ ALOITA PELI", fontSize = 20.sp, color = Color.White)
+                Text("▶ ALOITA PELI", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
             }
         }
         
@@ -388,7 +393,7 @@ fun ChessClockApp() {
                     .padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
             ) {
-                Text("▶ JATKA PELIÄ", fontSize = 20.sp, color = Color.White)
+                Text("▶ JATKA PELIÄ", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
             }
         }
     }
@@ -402,7 +407,9 @@ fun ChessClockApp() {
             title = { Text("Aikakontrollin valinta", fontSize = 20.sp) },
             text = {
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 400.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = if (isLandscape) 300.dp else 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(timePresets) { preset ->
@@ -436,12 +443,12 @@ fun ChessClockApp() {
                                 Text(preset.name, fontSize = 18.sp)
                                 if (preset.name != "Custom") {
                                     if (preset.incrementSeconds > 0) {
-                                        Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 16.sp)
+                                        Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 14.sp)
                                     } else {
-                                        Text("${preset.minutes} min", fontSize = 16.sp)
+                                        Text("${preset.minutes} min", fontSize = 14.sp)
                                     }
                                 } else {
-                                    Text("Aseta oma aika", fontSize = 16.sp, color = Color(0xFF2196F3))
+                                    Text("Aseta oma aika", fontSize = 14.sp, color = Color(0xFF2196F3))
                                 }
                                 if (isSelected && preset.name != "Custom") {
                                     Text("✓", fontSize = 18.sp, color = Color(0xFF4CAF50))
@@ -459,7 +466,7 @@ fun ChessClockApp() {
         )
     }
     
-    // Custom-aika dialogi
+    // Custom-aika dialogi - skrollattava ja toimii kaikissa suunnissa
     if (showCustomDialog) {
         AlertDialog(
             onDismissRequest = { showCustomDialog = false },
@@ -468,31 +475,70 @@ fun ChessClockApp() {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp),
+                        .heightIn(max = if (isLandscape) 280.dp else 350.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Minuutit:", fontSize = 16.sp)
-                    OutlinedTextField(
-                        value = customMinutes,
-                        onValueChange = { customMinutes = it },
-                        label = { Text("Minuutit (1-60)") },
+                    // Minuutit - skrollattava valitsin
+                    Text("Minuutit (1-60):", fontSize = 16.sp)
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFF5F5F5)
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.height(120.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            items((1..60).toList()) { minute ->
+                                val isSelected = customMinutes.toIntOrNull() == minute
+                                TextButton(
+                                    onClick = { customMinutes = minute.toString() },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "$minute min",
+                                        fontSize = 18.sp,
+                                        color = if (isSelected) Color(0xFF4CAF50) else Color.Black,
+                                        fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
+                    }
                     
-                    Text("Lisäysaika (increment):", fontSize = 16.sp)
-                    OutlinedTextField(
-                        value = customIncrement,
-                        onValueChange = { customIncrement = it },
-                        label = { Text("Sekuntia per siirto (0-60)") },
+                    // Lisäysaika (increment) - skrollattava valitsin
+                    Text("Lisäysaika sekunteina (0-60):", fontSize = 16.sp)
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFF5F5F5)
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.height(120.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            items((0..60).toList()) { inc ->
+                                val isSelected = customIncrement.toIntOrNull() == inc
+                                TextButton(
+                                    onClick = { customIncrement = inc.toString() },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = if (inc == 0) "Ei lisäysaikaa" else "+$inc s/siirto",
+                                        fontSize = 18.sp,
+                                        color = if (isSelected) Color(0xFF4CAF50) else Color.Black,
+                                        fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
+                    }
                     
                     Text(
-                        text = "Esimerkki: 5 min + 3 sekuntia = Rapid-peli",
-                        fontSize = 12.sp,
-                        color = Color.Gray
+                        text = "Valittu: ${customMinutes.toIntOrNull() ?: 5} min + ${customIncrement.toIntOrNull() ?: 0}s",
+                        fontSize = 14.sp,
+                        color = Color(0xFF2196F3),
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
@@ -507,7 +553,7 @@ fun ChessClockApp() {
                         }
                     }
                 ) {
-                    Text("Aseta")
+                    Text("Aseta ja aloita")
                 }
             },
             dismissButton = {
