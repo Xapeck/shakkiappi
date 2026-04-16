@@ -108,6 +108,21 @@ class ClockViewModel : ViewModel() {
         startTimer()
     }
     
+    fun togglePause() {
+        if (!_isRunning.value && _activePlayer.value == null && whiteTime > 0) {
+            // Jos peli ei ole käynnissä, aloitetaan se
+            startGame()
+        } else if (_isRunning.value && !_isPaused.value) {
+            // Jos peli on käynnissä, pysäytetään se
+            _isPaused.value = true
+            stopTimer()
+        } else if (_isRunning.value && _isPaused.value) {
+            // Jos peli on tauolla, jatketaan
+            _isPaused.value = false
+            startTimer()
+        }
+    }
+    
     fun pauseGame() {
         if (_isRunning.value && !_isPaused.value) {
             _isPaused.value = true
@@ -286,7 +301,7 @@ fun ChessClockApp() {
                         .background(
                             if (isPaused) Color(0xFFCCCCCC)
                             else if (activePlayer == "white" && isRunning) Color(0xFF4CAF50)
-                            else if (!isRunning && activePlayer == null) Color(0xFFFFFFFF)  // Valkoinen alkuväri
+                            else if (!isRunning && activePlayer == null) Color(0xFFFFFFFF)
                             else Color(0xFFF0F0F0)
                         )
                         .clickable { 
@@ -384,7 +399,7 @@ fun ChessClockApp() {
                         .background(
                             if (isPaused) Color(0xFFCCCCCC)
                             else if (activePlayer == "white" && isRunning) Color(0xFF4CAF50)
-                            else if (!isRunning && activePlayer == null) Color(0xFFFFFFFF)  // Valkoinen alkuväri
+                            else if (!isRunning && activePlayer == null) Color(0xFFFFFFFF)
                             else Color(0xFFF0F0F0)
                         )
                         .clickable { 
@@ -420,7 +435,9 @@ fun ChessClockApp() {
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
-                            if (isRunning && !isPaused) viewModel.pauseGame()
+                            if (isRunning && !isPaused) {
+                                viewModel.pauseGame()
+                            }
                             viewModel.resetToTimeSelection()
                             vibrate()
                         }
@@ -431,7 +448,7 @@ fun ChessClockApp() {
             Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
-        // PAUSE/PLAY -nappi (asetusten viereen)
+        // PAUSE/PLAY -nappi (asetusten viereen) - aloittaa myös pelin
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -439,19 +456,19 @@ fun ChessClockApp() {
                 .size(48.dp)
                 .background(Color(0xFFFF9800), shape = RoundedCornerShape(24.dp))
                 .clickable {
-                    if (isRunning && !isPaused) {
-                        viewModel.pauseGame()
-                        vibrate()
-                    } else if (isRunning && isPaused) {
-                        viewModel.resumeGame()
-                        vibrate()
-                    }
+                    viewModel.togglePause()
+                    vibrate()
                 },
             contentAlignment = Alignment.Center
         ) {
+            // Näytetään oikea ikoni tilanteen mukaan
+            val icon = when {
+                isRunning && !isPaused -> Icons.Default.Pause
+                else -> Icons.Default.PlayArrow
+            }
             Icon(
-                if (isRunning && !isPaused) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isRunning && !isPaused) "Tauko" else "Jatka",
+                icon,
+                contentDescription = if (isRunning && !isPaused) "Tauko" else "Käynnistä",
                 tint = Color.White,
                 modifier = Modifier.size(28.dp)
             )
@@ -475,9 +492,6 @@ fun ChessClockApp() {
         ) {
             Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
-        
-        // JATKA-painike (vanha, poistetaan, käytetään uutta Play-nappia)
-        // if (isPaused && isRunning) { ... } // Poistetaan tämä
     }
     
     // Asetusdialogi
