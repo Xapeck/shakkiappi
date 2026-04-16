@@ -208,7 +208,13 @@ fun formatTime(ms: Long): String {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Fullscreen
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        
+        // Näyttö ei sammu automaattisesti
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -238,9 +244,6 @@ fun ChessClockApp() {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     
-    // Fonttikoot - maltillinen suurennus
-    // Aiemmin: pysty 48sp, vaaka 36sp
-    // Nyt: pysty 56sp, vaaka 42sp
     val timeFontSize = if (isLandscape) 42.sp else 56.sp
     val titleFontSize = if (isLandscape) 20.sp else 24.sp
     val movesFontSize = if (isLandscape) 16.sp else 18.sp
@@ -274,40 +277,9 @@ fun ChessClockApp() {
     Box(modifier = Modifier.fillMaxSize()) {
         
         if (isLandscape) {
-            // Vaakamoodi: pelaajat vierekkäin
+            // Vaakamoodi: VALKOINEN VASEMMALLA, MUSTA OIKEALLA
             Row(modifier = Modifier.fillMaxSize()) {
-                // Musta pelaaja (vasen)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(
-                            if (isPaused) Color(0xFF666666)
-                            else if (activePlayer == "black" && isRunning) Color(0xFF4CAF50)
-                            else Color(0xFF2C2C2C)
-                        )
-                        .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
-                            vibrate()
-                            viewModel.pressPlayer("black")
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize().padding(8.dp)
-                    ) {
-                        Text("MUSTA", color = Color.White, fontSize = titleFontSize, fontWeight = FontWeight.Bold)
-                        Text(formatTime(blackTime), color = Color.White, fontSize = timeFontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        Text("Siirrot: $blackMoves", color = Color.White, fontSize = movesFontSize)
-                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = Color.White.copy(alpha = 0.8f), fontSize = movesFontSize * 0.8f)
-                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = pauseFontSize, fontWeight = FontWeight.Bold)
-                    }
-                }
-                
-                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxHeight().width(2.dp))
-                
-                // Valkoinen pelaaja (oikea)
+                // Valkoinen pelaaja (vasen)
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -338,15 +310,47 @@ fun ChessClockApp() {
                         if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = movesFontSize, fontWeight = FontWeight.Medium)
                     }
                 }
+                
+                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxHeight().width(2.dp))
+                
+                // Musta pelaaja (oikea)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(
+                            if (isPaused) Color(0xFF666666)
+                            else if (activePlayer == "black" && isRunning) Color(0xFF4CAF50)
+                            else Color(0xFF2C2C2C)
+                        )
+                        .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
+                            vibrate()
+                            viewModel.pressPlayer("black")
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize().padding(8.dp)
+                    ) {
+                        Text("MUSTA", color = Color.White, fontSize = titleFontSize, fontWeight = FontWeight.Bold)
+                        Text(formatTime(blackTime), color = Color.White, fontSize = timeFontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $blackMoves", color = Color.White, fontSize = movesFontSize)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = Color.White.copy(alpha = 0.8f), fontSize = movesFontSize * 0.8f)
+                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = pauseFontSize, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         } else {
-            // Pystymoodi: pelaajat päällekkäin
+            // Pystymoodi: MUSTA YLHÄÄLLÄ KÄÄNNETTYNÄ, VALKOINEN ALHALLA
             Column(modifier = Modifier.fillMaxSize()) {
-                // Musta pelaaja (ylhäällä)
+                // Musta pelaaja (ylhäällä, käännetty 180 astetta)
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .graphicsLayer(rotationZ = 180f)
                         .background(
                             if (isPaused) Color(0xFF666666)
                             else if (activePlayer == "black" && isRunning) Color(0xFF4CAF50)
