@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,8 +49,8 @@ class ClockViewModel : ViewModel() {
     private val _blackTime = MutableStateFlow(180000L)
     val blackTime: StateFlow<Long> = _blackTime.asStateFlow()
     
-    private val _activePlayer = MutableStateFlow("white")
-    val activePlayer: StateFlow<String> = _activePlayer.asStateFlow()
+    private val _activePlayer = MutableStateFlow<String?>(null)
+    val activePlayer: StateFlow<String?> = _activePlayer.asStateFlow()
     
     private val _whiteMoves = MutableStateFlow(0)
     val whiteMoves: StateFlow<Int> = _whiteMoves.asStateFlow()
@@ -90,7 +91,7 @@ class ClockViewModel : ViewModel() {
         _blackTime.value = timeMs
         _whiteMoves.value = 0
         _blackMoves.value = 0
-        _activePlayer.value = "white"
+        _activePlayer.value = null
         _isRunning.value = false
         _isPaused.value = false
         _incrementSeconds.value = incrementSeconds
@@ -100,6 +101,7 @@ class ClockViewModel : ViewModel() {
     fun startGame() {
         _isRunning.value = true
         _isPaused.value = false
+        _activePlayer.value = "white"
         startTimer()
     }
     
@@ -121,16 +123,21 @@ class ClockViewModel : ViewModel() {
         stopTimer()
         _isRunning.value = false
         _isPaused.value = false
+        _activePlayer.value = null
         val minutes = if (_selectedMinutes.value > 0) _selectedMinutes.value else 3
         val timeMs = minutes * 60 * 1000L
         _whiteTime.value = timeMs
         _blackTime.value = timeMs
         _whiteMoves.value = 0
         _blackMoves.value = 0
-        _activePlayer.value = "white"
     }
     
     fun pressPlayer(player: String) {
+        if (!_isRunning.value && player == "white") {
+            startGame()
+            return
+        }
+        
         if (!_isRunning.value || _isPaused.value) return
         if (_activePlayer.value != player) return
         
@@ -159,15 +166,17 @@ class ClockViewModel : ViewModel() {
                         _whiteTime.value = 0
                         _isRunning.value = false
                         _isPaused.value = false
+                        _activePlayer.value = null
                         break
                     }
                     _whiteTime.value = newTime
-                } else {
+                } else if (_activePlayer.value == "black") {
                     val newTime = _blackTime.value - 10
                     if (newTime <= 0) {
                         _blackTime.value = 0
                         _isRunning.value = false
                         _isPaused.value = false
+                        _activePlayer.value = null
                         break
                     }
                     _blackTime.value = newTime
@@ -199,7 +208,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Fullscreen
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         
         setContent {
@@ -257,70 +265,90 @@ fun ChessClockApp() {
     )
     
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Black player (top) - KÄÄNNETTY 180 ASTETTA
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .graphicsLayer(rotationZ = 180f)
-                    .background(
-                        when {
-                            isPaused -> Color(0xFF666666)
-                            activePlayer == "black" && isRunning -> Color(0xFF4CAF50)
-                            else -> Color(0xFF2C2C2C)
-                        }
-                    )
-                    .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
-                        vibrate()
-                        viewModel.pressPlayer("black")
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("MUSTA", color = Color.White, fontSize = if (isLandscape) 20.sp else 24.sp)
-                    Text(formatTime(blackTime), color = Color.White, fontSize = if (isLandscape) 36.sp else 48.sp)
-                    Text("Siirrot: $blackMoves", color = Color.White, fontSize = if (isLandscape) 14.sp else 18.sp)
-                    if (incrementSeconds > 0 && !isRunning) {
-                        Text("+${incrementSeconds}s/siirto", color = Color.White, fontSize = 12.sp)
-                    }
-                    if (isPaused) {
-                        Text("⏸ TAUKO", color = Color.Yellow, fontSize = if (isLandscape) 16.sp else 20.sp)
-                    }
-                }
+        if (isLandscape) {
+            // Vaakamoodi: pelaajat vierekkäin
+            Row(modifier = Modifier.fillMaxSize()) {
+                // Musta pelaaja (vasen)
+                PlayerCard(
+                    playerName = "MUSTA",
+                    time = blackTime,
+                    moves = blackMoves,
+                    isActive = activePlayer == "black" && isRunning,
+                    isPaused = isPaused,
+                    isRunning = isRunning,
+                    isWaiting = !isRunning && activePlayer == null,
+                    incrementSeconds = incrementSeconds,
+                    isLandscape = true,
+                    isWhite = false,
+                    onClick = { viewModel.pressPlayer("black") }
+                )
+                
+                Divider(
+                    color = Color.White,
+                    thickness = 2.dp,
+                    modifier = Modifier.fillMaxHeight().width(2.dp)
+                )
+                
+                // Valkoinen pelaaja (oikea)
+                PlayerCard(
+                    playerName = "VALKOINEN",
+                    time = whiteTime,
+                    moves = whiteMoves,
+                    isActive = activePlayer == "white" && isRunning,
+                    isPaused = isPaused,
+                    isRunning = isRunning,
+                    isWaiting = !isRunning && activePlayer == null,
+                    incrementSeconds = incrementSeconds,
+                    isLandscape = true,
+                    isWhite = true,
+                    onClick = { viewModel.pressPlayer("white") }
+                )
             }
-            
-            Divider(color = Color.White, thickness = 2.dp)
-            
-            // White player (bottom) - normaali
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(
-                        when {
-                            isPaused -> Color(0xFFCCCCCC)
-                            activePlayer == "white" && isRunning -> Color(0xFF4CAF50)
-                            else -> Color(0xFFF0F0F0)
-                        }
+        } else {
+            // Pystymoodi: pelaajat päällekkäin
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Musta pelaaja (ylhäällä, käännetty)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .graphicsLayer(rotationZ = 180f)
+                ) {
+                    PlayerCard(
+                        playerName = "MUSTA",
+                        time = blackTime,
+                        moves = blackMoves,
+                        isActive = activePlayer == "black" && isRunning,
+                        isPaused = isPaused,
+                        isRunning = isRunning,
+                        isWaiting = !isRunning && activePlayer == null,
+                        incrementSeconds = incrementSeconds,
+                        isLandscape = false,
+                        isWhite = false,
+                        onClick = { viewModel.pressPlayer("black") }
                     )
-                    .clickable(enabled = isRunning && !isPaused && activePlayer == "white") {
-                        vibrate()
-                        viewModel.pressPlayer("white")
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("VALKOINEN", fontSize = if (isLandscape) 20.sp else 24.sp)
-                    Text(formatTime(whiteTime), fontSize = if (isLandscape) 36.sp else 48.sp)
-                    Text("Siirrot: $whiteMoves", fontSize = if (isLandscape) 14.sp else 18.sp)
-                    if (incrementSeconds > 0 && !isRunning) {
-                        Text("+${incrementSeconds}s/siirto", fontSize = 12.sp)
-                    }
-                    if (isPaused) {
-                        Text("⏸ TAUKO", fontSize = if (isLandscape) 16.sp else 20.sp)
-                    }
                 }
+                
+                Divider(
+                    color = Color.White,
+                    thickness = 2.dp,
+                    modifier = Modifier.fillMaxWidth().height(2.dp)
+                )
+                
+                // Valkoinen pelaaja (alhaalla)
+                PlayerCard(
+                    playerName = "VALKOINEN",
+                    time = whiteTime,
+                    moves = whiteMoves,
+                    isActive = activePlayer == "white" && isRunning,
+                    isPaused = isPaused,
+                    isRunning = isRunning,
+                    isWaiting = !isRunning && activePlayer == null,
+                    incrementSeconds = incrementSeconds,
+                    isLandscape = false,
+                    isWhite = true,
+                    onClick = { viewModel.pressPlayer("white") }
+                )
             }
         }
         
@@ -329,8 +357,8 @@ fun ChessClockApp() {
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(12.dp)
-                .size(if (isLandscape) 40.dp else 48.dp)
-                .background(Color(0xFFF44336), shape = RoundedCornerShape(if (isLandscape) 20.dp else 24.dp))
+                .size(48.dp)
+                .background(Color(0xFFF44336), shape = RoundedCornerShape(24.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
@@ -344,7 +372,7 @@ fun ChessClockApp() {
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
+            Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
         // ASETUKSET-nappi
@@ -352,8 +380,8 @@ fun ChessClockApp() {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(12.dp)
-                .size(if (isLandscape) 40.dp else 48.dp)
-                .background(Color(0xFF2196F3), shape = RoundedCornerShape(if (isLandscape) 20.dp else 24.dp))
+                .size(48.dp)
+                .background(Color(0xFF2196F3), shape = RoundedCornerShape(24.dp))
                 .clickable {
                     if (isRunning && !isPaused) {
                         viewModel.pauseGame()
@@ -363,40 +391,31 @@ fun ChessClockApp() {
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
+            Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
-        // ALOITA-painike
-        if (!isRunning && whiteTime > 0 && whiteTime < Long.MAX_VALUE) {
-            Button(
-                onClick = { viewModel.startGame() },
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) {
-                Text("▶ ALOITA PELI", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
-            }
-        }
-        
-        // JATKA-painike
+        // JATKA-painike (vain tauon aikana)
         if (isPaused && isRunning) {
             Button(
                 onClick = { viewModel.resumeGame() },
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
             ) {
-                Text("▶ JATKA PELIÄ", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
+                Text("▶ JATKA PELIÄ", fontSize = 20.sp, color = Color.White)
             }
         }
     }
     
-    // Asetusdialogi
+    // Asetusdialogi (sama)
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
             title = { Text("Aikakontrollin valinta", fontSize = 20.sp) },
             text = {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = if (isLandscape) 280.dp else 400.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(timePresets) { preset ->
@@ -557,5 +576,101 @@ fun ChessClockApp() {
                 }
             }
         )
+    }
+}
+
+@Composable
+fun PlayerCard(
+    playerName: String,
+    time: Long,
+    moves: Int,
+    isActive: Boolean,
+    isPaused: Boolean,
+    isRunning: Boolean,
+    isWaiting: Boolean,
+    incrementSeconds: Int,
+    isLandscape: Boolean,
+    isWhite: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = when {
+        isPaused -> if (isWhite) Color(0xFFCCCCCC) else Color(0xFF666666)
+        isActive && isRunning -> Color(0xFF4CAF50)
+        isWaiting && isWhite -> Color(0xFFFFC107)  // Korostetaan valkoista aloitusvalmiudessa
+        else -> if (isWhite) Color(0xFFF0F0F0) else Color(0xFF2C2C2C)
+    }
+    
+    val textColor = when {
+        isWhite && !isActive && !isPaused -> Color.Black
+        isWhite && isPaused -> Color.Black
+        else -> Color.White
+    }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(
+                playerName,
+                color = textColor,
+                fontSize = if (isLandscape) 18.sp else 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 8.dp))
+            
+            Text(
+                formatTime(time),
+                color = textColor,
+                fontSize = if (isLandscape) 42.sp else 56.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 8.dp))
+            
+            Text(
+                "Siirrot: $moves",
+                color = textColor,
+                fontSize = if (isLandscape) 14.sp else 16.sp
+            )
+            
+            if (incrementSeconds > 0 && !isRunning) {
+                Text(
+                    "+${incrementSeconds}s/siirto",
+                    color = textColor.copy(alpha = 0.8f),
+                    fontSize = if (isLandscape) 11.sp else 12.sp
+                )
+            }
+            
+            if (isPaused) {
+                Text(
+                    "⏸ TAUKO",
+                    color = Color.Yellow,
+                    fontSize = if (isLandscape) 14.sp else 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            if (isWaiting && isWhite) {
+                Text(
+                    "👇 PAINA ALOITTAaksesi",
+                    color = Color(0xFFE65100),
+                    fontSize = if (isLandscape) 12.sp else 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
