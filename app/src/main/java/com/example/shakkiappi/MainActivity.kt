@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -209,10 +211,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Fullscreen
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        
-        // Näyttö ei sammu automaattisesti
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         
         setContent {
@@ -287,7 +286,7 @@ fun ChessClockApp() {
                         .background(
                             if (isPaused) Color(0xFFCCCCCC)
                             else if (activePlayer == "white" && isRunning) Color(0xFF4CAF50)
-                            else if (!isRunning && activePlayer == null) Color(0xFFFFC107)
+                            else if (!isRunning && activePlayer == null) Color(0xFFFFFFFF)  // Valkoinen alkuväri
                             else Color(0xFFF0F0F0)
                         )
                         .clickable { 
@@ -385,7 +384,7 @@ fun ChessClockApp() {
                         .background(
                             if (isPaused) Color(0xFFCCCCCC)
                             else if (activePlayer == "white" && isRunning) Color(0xFF4CAF50)
-                            else if (!isRunning && activePlayer == null) Color(0xFFFFC107)
+                            else if (!isRunning && activePlayer == null) Color(0xFFFFFFFF)  // Valkoinen alkuväri
                             else Color(0xFFF0F0F0)
                         )
                         .clickable { 
@@ -432,6 +431,32 @@ fun ChessClockApp() {
             Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
+        // PAUSE/PLAY -nappi (asetusten viereen)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 80.dp, bottom = 12.dp)
+                .size(48.dp)
+                .background(Color(0xFFFF9800), shape = RoundedCornerShape(24.dp))
+                .clickable {
+                    if (isRunning && !isPaused) {
+                        viewModel.pauseGame()
+                        vibrate()
+                    } else if (isRunning && isPaused) {
+                        viewModel.resumeGame()
+                        vibrate()
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                if (isRunning && !isPaused) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isRunning && !isPaused) "Tauko" else "Jatka",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        
         // ASETUKSET-nappi
         Box(
             modifier = Modifier
@@ -440,7 +465,9 @@ fun ChessClockApp() {
                 .size(48.dp)
                 .background(Color(0xFF2196F3), shape = RoundedCornerShape(24.dp))
                 .clickable {
-                    if (isRunning && !isPaused) viewModel.pauseGame()
+                    if (isRunning && !isPaused) {
+                        viewModel.pauseGame()
+                    }
                     showSettingsDialog = true
                     vibrate()
                 },
@@ -449,16 +476,8 @@ fun ChessClockApp() {
             Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
-        // JATKA-painike
-        if (isPaused && isRunning) {
-            Button(
-                onClick = { viewModel.resumeGame() },
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
-            ) {
-                Text("▶ JATKA PELIÄ", fontSize = movesFontSize, color = Color.White)
-            }
-        }
+        // JATKA-painike (vanha, poistetaan, käytetään uutta Play-nappia)
+        // if (isPaused && isRunning) { ... } // Poistetaan tämä
     }
     
     // Asetusdialogi
