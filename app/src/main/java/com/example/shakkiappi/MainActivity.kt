@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlin.math.min
 
 data class TimePreset(val name: String, val minutes: Int, val incrementSeconds: Int)
 
@@ -239,18 +238,13 @@ fun ChessClockApp() {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     
-    // Dynaamiset fonttikoot näytön leveyden mukaan
-    val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
-    
-    // Ajan fonttikoko: 12% näytän leveydestä, max 80sp, min 40sp
-    val timeFontSize = (screenWidth.value * 0.12f).sp.coerceIn(40.sp, 80.sp)
-    // Otsikon fonttikoko: 5% näytön leveydestä
-    val titleFontSize = (screenWidth.value * 0.05f).sp.coerceIn(18.sp, 28.sp)
-    // Siirtojen fonttikoko: 3.5% näytön leveydestä
-    val movesFontSize = (screenWidth.value * 0.035f).sp.coerceIn(14.sp, 20.sp)
-    // Tauko-tekstin fonttikoko
-    val pauseFontSize = (screenWidth.value * 0.04f).sp.coerceIn(14.sp, 20.sp)
+    // Fonttikoot - maltillinen suurennus
+    // Aiemmin: pysty 48sp, vaaka 36sp
+    // Nyt: pysty 56sp, vaaka 42sp
+    val timeFontSize = if (isLandscape) 42.sp else 56.sp
+    val titleFontSize = if (isLandscape) 20.sp else 24.sp
+    val movesFontSize = if (isLandscape) 16.sp else 18.sp
+    val pauseFontSize = if (isLandscape) 16.sp else 18.sp
     
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showCustomDialog by remember { mutableStateOf(false) }
