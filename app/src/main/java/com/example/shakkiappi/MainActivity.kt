@@ -48,8 +48,8 @@ class ClockViewModel : ViewModel() {
     private val _blackTime = MutableStateFlow(180000L)
     val blackTime: StateFlow<Long> = _blackTime.asStateFlow()
     
-    private val _activePlayer = MutableStateFlow("white")
-    val activePlayer: StateFlow<String> = _activePlayer.asStateFlow()
+    private val _activePlayer = MutableStateFlow<String?>(null)
+    val activePlayer: StateFlow<String?> = _activePlayer.asStateFlow()
     
     private val _whiteMoves = MutableStateFlow(0)
     val whiteMoves: StateFlow<Int> = _whiteMoves.asStateFlow()
@@ -90,7 +90,7 @@ class ClockViewModel : ViewModel() {
         _blackTime.value = timeMs
         _whiteMoves.value = 0
         _blackMoves.value = 0
-        _activePlayer.value = "white"
+        _activePlayer.value = null
         _isRunning.value = false
         _isPaused.value = false
         _incrementSeconds.value = incrementSeconds
@@ -100,6 +100,7 @@ class ClockViewModel : ViewModel() {
     fun startGame() {
         _isRunning.value = true
         _isPaused.value = false
+        _activePlayer.value = "white"  // Valkoinen aloittaa
         startTimer()
     }
     
@@ -121,16 +122,23 @@ class ClockViewModel : ViewModel() {
         stopTimer()
         _isRunning.value = false
         _isPaused.value = false
+        _activePlayer.value = null
         val minutes = if (_selectedMinutes.value > 0) _selectedMinutes.value else 3
         val timeMs = minutes * 60 * 1000L
         _whiteTime.value = timeMs
         _blackTime.value = timeMs
         _whiteMoves.value = 0
         _blackMoves.value = 0
-        _activePlayer.value = "white"
     }
     
     fun pressPlayer(player: String) {
+        // Jos peli ei ole käynnissä ja painetaan valkoista, aloitetaan peli
+        if (!_isRunning.value && player == "white") {
+            startGame()
+            return
+        }
+        
+        // Normaali siirron käsittely
         if (!_isRunning.value || _isPaused.value) return
         if (_activePlayer.value != player) return
         
@@ -159,15 +167,17 @@ class ClockViewModel : ViewModel() {
                         _whiteTime.value = 0
                         _isRunning.value = false
                         _isPaused.value = false
+                        _activePlayer.value = null
                         break
                     }
                     _whiteTime.value = newTime
-                } else {
+                } else if (_activePlayer.value == "black") {
                     val newTime = _blackTime.value - 10
                     if (newTime <= 0) {
                         _blackTime.value = 0
                         _isRunning.value = false
                         _isPaused.value = false
+                        _activePlayer.value = null
                         break
                     }
                     _blackTime.value = newTime
@@ -200,8 +210,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        actionBar?.hide()
-        supportActionBar?.hide()
         
         setContent {
             MaterialTheme {
@@ -264,7 +272,7 @@ fun ChessClockApp() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .graphicsLayer(rotationZ = 180f)  // <-- KÄÄNNETÄÄN MUSTA PUOLI
+                    .graphicsLayer(rotationZ = 180f)
                     .background(
                         when {
                             isPaused -> Color(0xFF666666)
@@ -288,12 +296,15 @@ fun ChessClockApp() {
                     if (isPaused) {
                         Text("⏸ TAUKO", color = Color.Yellow, fontSize = if (isLandscape) 16.sp else 20.sp)
                     }
+                    if (!isRunning && activePlayer == null) {
+                        Text("ODOTTAA", color = Color.Yellow, fontSize = if (isLandscape) 14.sp else 16.sp)
+                    }
                 }
             }
             
             Divider(color = Color.White, thickness = 2.dp)
             
-            // White player (bottom) - normaali
+            // White player (bottom) - normaali, aloittaa pelin
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -302,10 +313,11 @@ fun ChessClockApp() {
                         when {
                             isPaused -> Color(0xFFCCCCCC)
                             activePlayer == "white" && isRunning -> Color(0xFF4CAF50)
+                            !isRunning && activePlayer == null -> Color(0xFFFFC107)  // Korostetaan aloitusvalmiutta
                             else -> Color(0xFFF0F0F0)
                         }
                     )
-                    .clickable(enabled = isRunning && !isPaused && activePlayer == "white") {
+                    .clickable {
                         vibrate()
                         viewModel.pressPlayer("white")
                     },
@@ -320,6 +332,9 @@ fun ChessClockApp() {
                     }
                     if (isPaused) {
                         Text("⏸ TAUKO", fontSize = if (isLandscape) 16.sp else 20.sp)
+                    }
+                    if (!isRunning && activePlayer == null) {
+                        Text("👇 PAINA ALOITTAaksesi", fontSize = if (isLandscape) 14.sp else 16.sp, color = Color(0xFFE65100))
                     }
                 }
             }
@@ -367,22 +382,13 @@ fun ChessClockApp() {
             Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
         }
         
-        // ALOITA-painike
-        if (!isRunning && whiteTime > 0 && whiteTime < Long.MAX_VALUE) {
-            Button(
-                onClick = { viewModel.startGame() },
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) {
-                Text("▶ ALOITA PELI", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
-            }
-        }
-        
-        // JATKA-painike
+        // JATKA-painike (vain tauon aikana)
         if (isPaused && isRunning) {
             Button(
                 onClick = { viewModel.resumeGame() },
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
             ) {
                 Text("▶ JATKA PELIÄ", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
@@ -390,7 +396,7 @@ fun ChessClockApp() {
         }
     }
     
-    // Asetusdialogi (sama kuin aiemmin)
+    // Asetusdialogi
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
