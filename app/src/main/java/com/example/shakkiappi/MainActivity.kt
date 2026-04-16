@@ -1,8 +1,9 @@
-package com.example.REMOVED
+package com.example.shakkiappi
 
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibrationEffect
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -196,6 +198,11 @@ fun formatTime(ms: Long): String {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        actionBar?.hide()
+        supportActionBar?.hide()
+        
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -252,10 +259,12 @@ fun ChessClockApp() {
     
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Black player (top) - KÄÄNNETTY 180 ASTETTA
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .graphicsLayer(rotationZ = 180f)  // <-- KÄÄNNETÄÄN MUSTA PUOLI
                     .background(
                         when {
                             isPaused -> Color(0xFF666666)
@@ -284,6 +293,7 @@ fun ChessClockApp() {
             
             Divider(color = Color.White, thickness = 2.dp)
             
+            // White player (bottom) - normaali
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -315,6 +325,7 @@ fun ChessClockApp() {
             }
         }
         
+        // RESET-nappi
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -337,6 +348,7 @@ fun ChessClockApp() {
             Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
         }
         
+        // ASETUKSET-nappi
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -355,6 +367,7 @@ fun ChessClockApp() {
             Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
         }
         
+        // ALOITA-painike
         if (!isRunning && whiteTime > 0 && whiteTime < Long.MAX_VALUE) {
             Button(
                 onClick = { viewModel.startGame() },
@@ -365,6 +378,7 @@ fun ChessClockApp() {
             }
         }
         
+        // JATKA-painike
         if (isPaused && isRunning) {
             Button(
                 onClick = { viewModel.resumeGame() },
@@ -376,6 +390,7 @@ fun ChessClockApp() {
         }
     }
     
+    // Asetusdialogi (sama kuin aiemmin)
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
@@ -423,7 +438,7 @@ fun ChessClockApp() {
         )
     }
     
-    // Custom-aika dialogi - kentät vierekkäin
+    // Custom-aika dialogi
     if (showCustomDialog) {
         AlertDialog(
             onDismissRequest = { showCustomDialog = false },
@@ -435,12 +450,10 @@ fun ChessClockApp() {
                         .padding(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Kentät vierekkäin
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Minuutit
                         Column(
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -468,7 +481,6 @@ fun ChessClockApp() {
                             }
                         }
                         
-                        // Lisäysaika
                         Column(
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -497,7 +509,6 @@ fun ChessClockApp() {
                         }
                     }
                     
-                    // Esikatselu
                     val minutesValid = customMinutes.toIntOrNull() in 1..60
                     val incrementValid = customIncrement.toIntOrNull() in 0..60
                     val previewText = if (minutesValid && incrementValid) {

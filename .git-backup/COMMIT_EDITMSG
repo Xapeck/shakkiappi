@@ -1,0 +1,7 @@
+Improve custom time dialog: side-by-side fields with Min/Incr labels
+
+- Place minutes and increment fields next to each other
+- Use short labels 'Min' and 'Incr'
+- Equal height and width for both fields
+- Works in portrait and landscape orientation
+- Clean and compact layout
