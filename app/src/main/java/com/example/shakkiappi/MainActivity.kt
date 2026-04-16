@@ -109,15 +109,12 @@ class ClockViewModel : ViewModel() {
     }
     
     fun togglePause() {
-        if (!_isRunning.value && _activePlayer.value == null && whiteTime > 0L) {
-            // Jos peli ei ole käynnissä, aloitetaan se
+        if (!_isRunning.value && _activePlayer.value == null && _whiteTime.value > 0L) {
             startGame()
         } else if (_isRunning.value && !_isPaused.value) {
-            // Jos peli on käynnissä, pysäytetään se
             _isPaused.value = true
             stopTimer()
         } else if (_isRunning.value && _isPaused.value) {
-            // Jos peli on tauolla, jatketaan
             _isPaused.value = false
             startTimer()
         }
@@ -448,7 +445,7 @@ fun ChessClockApp() {
             Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
-        // PAUSE/PLAY -nappi (asetusten viereen) - aloittaa myös pelin
+        // PAUSE/PLAY -nappi
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -461,11 +458,7 @@ fun ChessClockApp() {
                 },
             contentAlignment = Alignment.Center
         ) {
-            // Näytetään oikea ikoni tilanteen mukaan
-            val icon = when {
-                isRunning && !isPaused -> Icons.Default.Pause
-                else -> Icons.Default.PlayArrow
-            }
+            val icon = if (isRunning && !isPaused) Icons.Default.Pause else Icons.Default.PlayArrow
             Icon(
                 icon,
                 contentDescription = if (isRunning && !isPaused) "Tauko" else "Käynnistä",
