@@ -109,7 +109,7 @@ class ClockViewModel : ViewModel() {
     }
     
     fun togglePause() {
-        if (!_isRunning.value && _activePlayer.value == null && whiteTime > 0) {
+        if (!_isRunning.value && _activePlayer.value == null && whiteTime > 0L) {
             // Jos peli ei ole käynnissä, aloitetaan se
             startGame()
         } else if (_isRunning.value && !_isPaused.value) {
