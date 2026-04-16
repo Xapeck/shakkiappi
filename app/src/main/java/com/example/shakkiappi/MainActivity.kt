@@ -208,7 +208,13 @@ fun formatTime(ms: Long): String {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Fullscreen
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        
+        // Näyttö ei sammu automaattisesti
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
