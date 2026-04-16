@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 data class TimePreset(val name: String, val minutes: Int, val incrementSeconds: Int)
 
@@ -238,6 +239,19 @@ fun ChessClockApp() {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     
+    // Dynaamiset fonttikoot näytön leveyden mukaan
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+    
+    // Ajan fonttikoko: 12% näytän leveydestä, max 80sp, min 40sp
+    val timeFontSize = (screenWidth.value * 0.12f).sp.coerceIn(40.sp, 80.sp)
+    // Otsikon fonttikoko: 5% näytön leveydestä
+    val titleFontSize = (screenWidth.value * 0.05f).sp.coerceIn(18.sp, 28.sp)
+    // Siirtojen fonttikoko: 3.5% näytön leveydestä
+    val movesFontSize = (screenWidth.value * 0.035f).sp.coerceIn(14.sp, 20.sp)
+    // Tauko-tekstin fonttikoko
+    val pauseFontSize = (screenWidth.value * 0.04f).sp.coerceIn(14.sp, 20.sp)
+    
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showCustomDialog by remember { mutableStateOf(false) }
     var customMinutes by remember { mutableStateOf("5") }
@@ -289,11 +303,11 @@ fun ChessClockApp() {
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize().padding(8.dp)
                     ) {
-                        Text("MUSTA", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text(formatTime(blackTime), color = Color.White, fontSize = 56.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        Text("Siirrot: $blackMoves", color = Color.White, fontSize = 16.sp)
-                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("MUSTA", color = Color.White, fontSize = titleFontSize, fontWeight = FontWeight.Bold)
+                        Text(formatTime(blackTime), color = Color.White, fontSize = timeFontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $blackMoves", color = Color.White, fontSize = movesFontSize)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = Color.White.copy(alpha = 0.8f), fontSize = movesFontSize * 0.8f)
+                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = pauseFontSize, fontWeight = FontWeight.Bold)
                     }
                 }
                 
@@ -322,12 +336,12 @@ fun ChessClockApp() {
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize().padding(8.dp)
                     ) {
-                        Text("VALKOINEN", color = textColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text(formatTime(whiteTime), color = textColor, fontSize = 56.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        Text("Siirrot: $whiteMoves", color = textColor, fontSize = 16.sp)
-                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = textColor.copy(alpha = 0.8f), fontSize = 12.sp)
-                        if (isPaused) Text("⏸ TAUKO", color = Color(0xFFE65100), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text("VALKOINEN", color = textColor, fontSize = titleFontSize, fontWeight = FontWeight.Bold)
+                        Text(formatTime(whiteTime), color = textColor, fontSize = timeFontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $whiteMoves", color = textColor, fontSize = movesFontSize)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = textColor.copy(alpha = 0.8f), fontSize = movesFontSize * 0.8f)
+                        if (isPaused) Text("⏸ TAUKO", color = Color(0xFFE65100), fontSize = pauseFontSize, fontWeight = FontWeight.Bold)
+                        if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = movesFontSize, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -355,11 +369,11 @@ fun ChessClockApp() {
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize().padding(8.dp)
                     ) {
-                        Text("MUSTA", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        Text(formatTime(blackTime), color = Color.White, fontSize = 64.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        Text("Siirrot: $blackMoves", color = Color.White, fontSize = 18.sp)
-                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
-                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("MUSTA", color = Color.White, fontSize = titleFontSize, fontWeight = FontWeight.Bold)
+                        Text(formatTime(blackTime), color = Color.White, fontSize = timeFontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $blackMoves", color = Color.White, fontSize = movesFontSize)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = Color.White.copy(alpha = 0.8f), fontSize = movesFontSize * 0.8f)
+                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = pauseFontSize, fontWeight = FontWeight.Bold)
                     }
                 }
                 
@@ -388,12 +402,12 @@ fun ChessClockApp() {
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize().padding(8.dp)
                     ) {
-                        Text("VALKOINEN", color = textColor, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        Text(formatTime(whiteTime), color = textColor, fontSize = 64.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        Text("Siirrot: $whiteMoves", color = textColor, fontSize = 18.sp)
-                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = textColor.copy(alpha = 0.8f), fontSize = 14.sp)
-                        if (isPaused) Text("⏸ TAUKO", color = Color(0xFFE65100), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text("VALKOINEN", color = textColor, fontSize = titleFontSize, fontWeight = FontWeight.Bold)
+                        Text(formatTime(whiteTime), color = textColor, fontSize = timeFontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $whiteMoves", color = textColor, fontSize = movesFontSize)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = textColor.copy(alpha = 0.8f), fontSize = movesFontSize * 0.8f)
+                        if (isPaused) Text("⏸ TAUKO", color = Color(0xFFE65100), fontSize = pauseFontSize, fontWeight = FontWeight.Bold)
+                        if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = movesFontSize, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -444,7 +458,7 @@ fun ChessClockApp() {
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
             ) {
-                Text("▶ JATKA PELIÄ", fontSize = 20.sp, color = Color.White)
+                Text("▶ JATKA PELIÄ", fontSize = movesFontSize, color = Color.White)
             }
         }
     }
