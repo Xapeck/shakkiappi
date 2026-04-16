@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -100,7 +101,7 @@ class ClockViewModel : ViewModel() {
     fun startGame() {
         _isRunning.value = true
         _isPaused.value = false
-        _activePlayer.value = "white"  // Valkoinen aloittaa
+        _activePlayer.value = "white"
         startTimer()
     }
     
@@ -132,13 +133,11 @@ class ClockViewModel : ViewModel() {
     }
     
     fun pressPlayer(player: String) {
-        // Jos peli ei ole käynnissä ja painetaan valkoista, aloitetaan peli
         if (!_isRunning.value && player == "white") {
             startGame()
             return
         }
         
-        // Normaali siirron käsittely
         if (!_isRunning.value || _isPaused.value) return
         if (_activePlayer.value != player) return
         
@@ -208,9 +207,7 @@ fun formatTime(ms: Long): String {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -265,76 +262,131 @@ fun ChessClockApp() {
         TimePreset("Custom", 0, 0)
     )
     
+    // Yhteiset värit ja tyylit
+    val whiteBg = if (isPaused) Color(0xFFCCCCCC) 
+                  else if (activePlayer == "white" && isRunning) Color(0xFF4CAF50)
+                  else if (!isRunning && activePlayer == null) Color(0xFFFFC107)
+                  else Color(0xFFF0F0F0)
+    
+    val blackBg = if (isPaused) Color(0xFF666666)
+                  else if (activePlayer == "black" && isRunning) Color(0xFF4CAF50)
+                  else Color(0xFF2C2C2C)
+    
+    val whiteTextColor = if (whiteBg == Color(0xFFF0F0F0) || whiteBg == Color(0xFFFFC107) || whiteBg == Color(0xFFCCCCCC)) Color.Black else Color.White
+    val blackTextColor = Color.White
+    
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Black player (top) - KÄÄNNETTY 180 ASTETTA
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .graphicsLayer(rotationZ = 180f)
-                    .background(
-                        when {
-                            isPaused -> Color(0xFF666666)
-                            activePlayer == "black" && isRunning -> Color(0xFF4CAF50)
-                            else -> Color(0xFF2C2C2C)
-                        }
-                    )
-                    .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
-                        vibrate()
-                        viewModel.pressPlayer("black")
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("MUSTA", color = Color.White, fontSize = if (isLandscape) 20.sp else 24.sp)
-                    Text(formatTime(blackTime), color = Color.White, fontSize = if (isLandscape) 36.sp else 48.sp)
-                    Text("Siirrot: $blackMoves", color = Color.White, fontSize = if (isLandscape) 14.sp else 18.sp)
-                    if (incrementSeconds > 0 && !isRunning) {
-                        Text("+${incrementSeconds}s/siirto", color = Color.White, fontSize = 12.sp)
+        
+        if (isLandscape) {
+            // Vaakamoodi: pelaajat vierekkäin
+            Row(modifier = Modifier.fillMaxSize()) {
+                // Musta pelaaja (vasen)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(blackBg)
+                        .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
+                            vibrate()
+                            viewModel.pressPlayer("black")
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize().padding(8.dp)
+                    ) {
+                        Text("MUSTA", color = blackTextColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(formatTime(blackTime), color = blackTextColor, fontSize = 52.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $blackMoves", color = blackTextColor, fontSize = 14.sp)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = blackTextColor.copy(alpha = 0.8f), fontSize = 12.sp)
+                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
-                    if (isPaused) {
-                        Text("⏸ TAUKO", color = Color.Yellow, fontSize = if (isLandscape) 16.sp else 20.sp)
-                    }
-                    if (!isRunning && activePlayer == null) {
-                        Text("ODOTTAA", color = Color.Yellow, fontSize = if (isLandscape) 14.sp else 16.sp)
+                }
+                
+                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxHeight().width(2.dp))
+                
+                // Valkoinen pelaaja (oikea)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(whiteBg)
+                        .clickable { 
+                            vibrate()
+                            viewModel.pressPlayer("white")
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize().padding(8.dp)
+                    ) {
+                        Text("VALKOINEN", color = whiteTextColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(formatTime(whiteTime), color = whiteTextColor, fontSize = 52.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $whiteMoves", color = whiteTextColor, fontSize = 14.sp)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = whiteTextColor.copy(alpha = 0.8f), fontSize = 12.sp)
+                        if (isPaused) Text("⏸ TAUKO", color = Color(0xFFE65100), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }
-            
-            Divider(color = Color.White, thickness = 2.dp)
-            
-            // White player (bottom) - normaali, aloittaa pelin
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(
-                        when {
-                            isPaused -> Color(0xFFCCCCCC)
-                            activePlayer == "white" && isRunning -> Color(0xFF4CAF50)
-                            !isRunning && activePlayer == null -> Color(0xFFFFC107)  // Korostetaan aloitusvalmiutta
-                            else -> Color(0xFFF0F0F0)
-                        }
-                    )
-                    .clickable {
-                        vibrate()
-                        viewModel.pressPlayer("white")
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("VALKOINEN", fontSize = if (isLandscape) 20.sp else 24.sp)
-                    Text(formatTime(whiteTime), fontSize = if (isLandscape) 36.sp else 48.sp)
-                    Text("Siirrot: $whiteMoves", fontSize = if (isLandscape) 14.sp else 18.sp)
-                    if (incrementSeconds > 0 && !isRunning) {
-                        Text("+${incrementSeconds}s/siirto", fontSize = 12.sp)
+        } else {
+            // Pystymoodi: pelaajat päällekkäin
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Musta pelaaja (ylhäällä, käännetty)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .graphicsLayer(rotationZ = 180f)
+                        .background(blackBg)
+                        .clickable(enabled = isRunning && !isPaused && activePlayer == "black") {
+                            vibrate()
+                            viewModel.pressPlayer("black")
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize().padding(8.dp)
+                    ) {
+                        Text("MUSTA", color = blackTextColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(formatTime(blackTime), color = blackTextColor, fontSize = 56.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $blackMoves", color = blackTextColor, fontSize = 16.sp)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = blackTextColor.copy(alpha = 0.8f), fontSize = 12.sp)
+                        if (isPaused) Text("⏸ TAUKO", color = Color.Yellow, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
-                    if (isPaused) {
-                        Text("⏸ TAUKO", fontSize = if (isLandscape) 16.sp else 20.sp)
-                    }
-                    if (!isRunning && activePlayer == null) {
-                        Text("👇 PAINA ALOITTAaksesi", fontSize = if (isLandscape) 14.sp else 16.sp, color = Color(0xFFE65100))
+                }
+                
+                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxWidth().height(2.dp))
+                
+                // Valkoinen pelaaja (alhaalla)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(whiteBg)
+                        .clickable { 
+                            vibrate()
+                            viewModel.pressPlayer("white")
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize().padding(8.dp)
+                    ) {
+                        Text("VALKOINEN", color = whiteTextColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(formatTime(whiteTime), color = whiteTextColor, fontSize = 56.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text("Siirrot: $whiteMoves", color = whiteTextColor, fontSize = 16.sp)
+                        if (incrementSeconds > 0 && !isRunning) Text("+${incrementSeconds}s/siirto", color = whiteTextColor.copy(alpha = 0.8f), fontSize = 12.sp)
+                        if (isPaused) Text("⏸ TAUKO", color = Color(0xFFE65100), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        if (!isRunning && activePlayer == null) Text("👇 PAINA ALOITTAaksesi", color = Color(0xFFE65100), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -345,14 +397,12 @@ fun ChessClockApp() {
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(12.dp)
-                .size(if (isLandscape) 40.dp else 48.dp)
-                .background(Color(0xFFF44336), shape = RoundedCornerShape(if (isLandscape) 20.dp else 24.dp))
+                .size(48.dp)
+                .background(Color(0xFFF44336), shape = RoundedCornerShape(24.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
-                            if (isRunning && !isPaused) {
-                                viewModel.pauseGame()
-                            }
+                            if (isRunning && !isPaused) viewModel.pauseGame()
                             viewModel.resetToTimeSelection()
                             vibrate()
                         }
@@ -360,7 +410,7 @@ fun ChessClockApp() {
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
+            Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
         // ASETUKSET-nappi
@@ -368,30 +418,26 @@ fun ChessClockApp() {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(12.dp)
-                .size(if (isLandscape) 40.dp else 48.dp)
-                .background(Color(0xFF2196F3), shape = RoundedCornerShape(if (isLandscape) 20.dp else 24.dp))
+                .size(48.dp)
+                .background(Color(0xFF2196F3), shape = RoundedCornerShape(24.dp))
                 .clickable {
-                    if (isRunning && !isPaused) {
-                        viewModel.pauseGame()
-                    }
+                    if (isRunning && !isPaused) viewModel.pauseGame()
                     showSettingsDialog = true
                     vibrate()
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(if (isLandscape) 24.dp else 28.dp))
+            Icon(Icons.Default.Settings, contentDescription = "Asetukset", tint = Color.White, modifier = Modifier.size(28.dp))
         }
         
-        // JATKA-painike (vain tauon aikana)
+        // JATKA-painike
         if (isPaused && isRunning) {
             Button(
                 onClick = { viewModel.resumeGame() },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
             ) {
-                Text("▶ JATKA PELIÄ", fontSize = if (isLandscape) 16.sp else 20.sp, color = Color.White)
+                Text("▶ JATKA PELIÄ", fontSize = 20.sp, color = Color.White)
             }
         }
     }
@@ -403,7 +449,7 @@ fun ChessClockApp() {
             title = { Text("Aikakontrollin valinta", fontSize = 20.sp) },
             text = {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = if (isLandscape) 280.dp else 400.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(timePresets) { preset ->
@@ -424,17 +470,12 @@ fun ChessClockApp() {
                             Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(preset.name, fontSize = 16.sp)
                                 if (preset.name != "Custom") {
-                                    if (preset.incrementSeconds > 0) {
-                                        Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 13.sp)
-                                    } else {
-                                        Text("${preset.minutes} min", fontSize = 13.sp)
-                                    }
+                                    if (preset.incrementSeconds > 0) Text("${preset.minutes} min + ${preset.incrementSeconds}s", fontSize = 13.sp)
+                                    else Text("${preset.minutes} min", fontSize = 13.sp)
                                 } else {
                                     Text("⚙️ Aseta oma aika", fontSize = 13.sp, color = Color(0xFF2196F3))
                                 }
-                                if (isSelected && preset.name != "Custom") {
-                                    Text("✓", fontSize = 16.sp, color = Color(0xFF4CAF50))
-                                }
+                                if (isSelected && preset.name != "Custom") Text("✓", fontSize = 16.sp, color = Color(0xFF4CAF50))
                             }
                         }
                     }
@@ -451,31 +492,22 @@ fun ChessClockApp() {
             title = { Text("Aseta oma aika", fontSize = 20.sp) },
             text = {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("Min", fontSize = 14.sp, color = Color.Gray)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(70.dp)
-                            ) {
+                            Spacer(Modifier.height(4.dp))
+                            Box(Modifier.fillMaxWidth().height(70.dp)) {
                                 OutlinedTextField(
                                     value = customMinutes,
-                                    onValueChange = { customMinutes = it.filter { char -> char.isDigit() } },
+                                    onValueChange = { customMinutes = it.filter { it.isDigit() } },
                                     modifier = Modifier.fillMaxSize(),
-                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
                                     isError = customMinutes.toIntOrNull() !in 1..60 && customMinutes.isNotEmpty(),
                                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = 28.sp, textAlign = TextAlign.Center),
@@ -486,23 +518,15 @@ fun ChessClockApp() {
                                 )
                             }
                         }
-                        
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("Incr", fontSize = 14.sp, color = Color.Gray)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(70.dp)
-                            ) {
+                            Spacer(Modifier.height(4.dp))
+                            Box(Modifier.fillMaxWidth().height(70.dp)) {
                                 OutlinedTextField(
                                     value = customIncrement,
-                                    onValueChange = { customIncrement = it.filter { char -> char.isDigit() } },
+                                    onValueChange = { customIncrement = it.filter { it.isDigit() } },
                                     modifier = Modifier.fillMaxSize(),
-                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
                                     isError = customIncrement.toIntOrNull() !in 0..60 && customIncrement.isNotEmpty(),
                                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = 28.sp, textAlign = TextAlign.Center),
@@ -517,24 +541,16 @@ fun ChessClockApp() {
                     
                     val minutesValid = customMinutes.toIntOrNull() in 1..60
                     val incrementValid = customIncrement.toIntOrNull() in 0..60
-                    val previewText = if (minutesValid && incrementValid) {
-                        val inc = customIncrement.toIntOrNull() ?: 0
-                        if (inc > 0) {
-                            "${customMinutes} min + ${inc} s"
-                        } else {
-                            "${customMinutes} min"
-                        }
-                    } else {
-                        "Syötä min 1-60, inc 0-60"
-                    }
-                    
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = if (minutesValid && incrementValid) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = previewText,
+                            text = if (minutesValid && incrementValid) {
+                                val inc = customIncrement.toIntOrNull() ?: 0
+                                if (inc > 0) "${customMinutes} min + ${inc} s" else "${customMinutes} min"
+                            } else "Syötä min 1-60, inc 0-60",
                             fontSize = 14.sp,
                             modifier = Modifier.padding(10.dp),
                             color = if (minutesValid && incrementValid) Color(0xFF2E7D32) else Color(0xFFC62828),
@@ -554,15 +570,9 @@ fun ChessClockApp() {
                         }
                     },
                     enabled = customMinutes.toIntOrNull() in 1..60 && customIncrement.toIntOrNull() in 0..60
-                ) {
-                    Text("Aseta ja aloita", fontSize = 16.sp)
-                }
+                ) { Text("Aseta ja aloita", fontSize = 16.sp) }
             },
-            dismissButton = {
-                TextButton(onClick = { showCustomDialog = false }) {
-                    Text("Peruuta", fontSize = 16.sp)
-                }
-            }
+            dismissButton = { TextButton(onClick = { showCustomDialog = false }) { Text("Peruuta", fontSize = 16.sp) } }
         )
     }
 }
